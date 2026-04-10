@@ -1,0 +1,6 @@
+[submodule "SpaceInvaders"]
+	path = SpaceInvaders
+	url = git@github.com:Sofian-bll/SpaceInvaders.git
+[submodule "TwoSpaceships"]
+	path = TwoSpaceships
+	url = git@github.com:Sofian-bll/TwoSpaceships.git
