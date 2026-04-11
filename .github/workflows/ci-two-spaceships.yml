@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   push:
   pull_request:
-    branches: ['main']
+    branches:
+      - 'main'
 
 jobs:
   audit_job:
@@ -19,8 +20,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          cache: npm
           node-version: 18.x
+          cache: npm
+          cache-dependency-path: TwoSpaceships/package-lock.json
 
       - name: Install
         run: npm ci
