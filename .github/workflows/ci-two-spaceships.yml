@@ -1,0 +1,28 @@
+name: ci-two-spaceships
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+
+jobs:
+  audit_job:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: TwoSpaceships
+    steps:
+      - name: Clone & Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          cache: npm
+          node-version: 18.x
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run eslint:check
