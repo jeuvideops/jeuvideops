@@ -42,7 +42,7 @@ jobs:
         id: upload-report
         with:
           name: vitest-report
-          path: html/
+          path: TwoSpaceships/html/
 
       - name: Viewer link in summary
         run: echo "[View HTML report](https://viewer.vitest.dev/?url=${{ steps.upload-report.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
