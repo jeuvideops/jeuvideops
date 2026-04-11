@@ -3,7 +3,9 @@ name: ci-two-spaceships
 on:
   workflow_dispatch:
   push:
-    branches: ['main']
+  pull_request:
+    branches:
+      - 'main'
 
 jobs:
   audit_job:
