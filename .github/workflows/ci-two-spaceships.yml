@@ -22,8 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: ./.github/actions/setup-node-project
-        with:
-          working-directory: ${{ env.WorkDir }}
 
       - name: Run ESLint
         working-directory: ${{ env.WorkDir }}
@@ -35,8 +33,6 @@ jobs:
     needs: lint
     steps:
       - uses: ./.github/actions/setup-node-project
-        with:
-          working-directory: ${{ env.WorkDir }}
 
       - name: Run tests
         working-directory: ${{ env.WorkDir }}
@@ -59,8 +55,6 @@ jobs:
       - test
     steps:
       - uses: ./.github/actions/setup-node-project
-        with:
-          working-directory: ${{ env.WorkDir }}
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
