@@ -1,0 +1,76 @@
+name: deploy-dashboard
+
+on:
+  workflow_run:
+    workflows: ['ci-two-spaceships']
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-dashboard
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Generate & Deploy Dashboard
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download twospaceships allure-results
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }},
+            });
+            const match = artifacts.data.artifacts.find(a => a.name === 'twospaceships-allure-results');
+            if (!match) throw new Error('Artifact twospaceships-allure-results not found');
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: match.id,
+              archive_format: 'zip',
+            });
+            const fs = require('fs');
+            fs.mkdirSync('TwoSpaceships/allure-results', { recursive: true });
+            fs.writeFileSync('twospaceships-allure-results.zip', Buffer.from(download.data));
+
+      - name: Unzip allure-results
+        run: unzip -o twospaceships-allure-results.zip -d TwoSpaceships/allure-results
+
+      - name: Generate TwoSpaceships report
+        run: npm run report:twospaceships
+
+      - name: Generate dashboard
+        run: npm run report:dashboard
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

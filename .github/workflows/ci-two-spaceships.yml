@@ -55,10 +55,17 @@ jobs:
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
-        id: upload-report
         with:
-          name: vitest-report
+          name: twospaceships-vitest-report
           path: ${{ env.WORK_DIR }}/html/
+          retention-days: 7
+
+      - name: Upload allure results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: twospaceships-allure-results
+          path: ${{ env.WORK_DIR }}/allure-results/
           retention-days: 7
 
   e2e:
@@ -89,6 +96,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          name: twospaceships-playwright-report
           path: ${{ env.WORK_DIR }}/playwright-report/
           retention-days: 7

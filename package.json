@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "report:twospaceships": "allure awesome --config allurerc.twospaceships.mjs TwoSpaceships/allure-results",
-    "report:dashboard": "allure dashboard --config allurerc.dashboard.mjs TwoSpaceships/allure-results",
+    "report:twospaceships": "allure awesome TwoSpaceships/allure-results --output dashboard --name TwoSpaceships --single-file",
+    "report:dashboard": "allure dashboard TwoSpaceships/allure-results --output dashboard --name JeuxVideOPS",
     "report": "npm run report:twospaceships && npm run report:dashboard"
   },
   "repository": {
