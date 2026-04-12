@@ -25,16 +25,12 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Allure CLI
+        run: npm install allure@3
 
       - name: Download twospaceships allure-results
         uses: actions/download-artifact@v4
@@ -45,10 +41,10 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Generate TwoSpaceships report
-        run: npm run report:twospaceships
+        run: npx allure awesome TwoSpaceships/allure-results --output dashboard --name TwoSpaceships --single-file
 
       - name: Generate dashboard
-        run: npm run report:dashboard
+        run: npx allure dashboard TwoSpaceships/allure-results --output dashboard --name JeuxVideOPS
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
