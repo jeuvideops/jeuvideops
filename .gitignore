@@ -3,3 +3,14 @@
 
 # IDE
 .idea/
+
+# Dependencies
+node_modules/
+
+# Generated — do not commit
+dashboard/
+TwoSpaceships/allure-results/
+TwoSpaceships/html/
+TwoSpaceships/dist/
+TwoSpaceships/playwright-report/
+TwoSpaceships/test-results/

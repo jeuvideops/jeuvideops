@@ -1,0 +1,26 @@
+{
+  "name": "jeuvideops",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "report:twospaceships": "allure awesome --config allurerc.twospaceships.mjs TwoSpaceships/allure-results",
+    "report:dashboard": "allure dashboard --config allurerc.dashboard.mjs TwoSpaceships/allure-results",
+    "report": "npm run report:twospaceships && npm run report:dashboard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EpitechWebAcademiePromo2027/W-DOP-200-PAR-2-1-jeux_videops-17.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Sofian-bll/jeuvideops/issues"
+  },
+  "homepage": "https://github.com/Sofian-bll/jeuvideops#readme",
+  "devDependencies": {
+    "allure": "^3.4.1"
+  }
+}
