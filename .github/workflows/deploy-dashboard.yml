@@ -37,28 +37,12 @@ jobs:
         run: npm ci
 
       - name: Download twospaceships allure-results
-        uses: actions/github-script@v8
+        uses: actions/download-artifact@v4
         with:
-          script: |
-            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: ${{ github.event.workflow_run.id }},
-            });
-            const match = artifacts.data.artifacts.find(a => a.name === 'twospaceships-allure-results');
-            if (!match) throw new Error('Artifact twospaceships-allure-results not found');
-            const download = await github.rest.actions.downloadArtifact({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              artifact_id: match.id,
-              archive_format: 'zip',
-            });
-            const fs = require('fs');
-            fs.mkdirSync('TwoSpaceships/allure-results', { recursive: true });
-            fs.writeFileSync('twospaceships-allure-results.zip', Buffer.from(download.data));
-
-      - name: Unzip allure-results
-        run: unzip -o twospaceships-allure-results.zip -d TwoSpaceships/allure-results
+          name: twospaceships-allure-results
+          path: TwoSpaceships/allure-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
 
       - name: Generate TwoSpaceships report
         run: npm run report:twospaceships
@@ -67,7 +51,7 @@ jobs:
         run: npm run report:dashboard
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dashboard/
 
