@@ -21,6 +21,11 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: ./.github/actions/setup-node-project
 
       - name: Run ESLint
@@ -32,6 +37,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: ./.github/actions/setup-node-project
 
       - name: Run tests
@@ -54,6 +64,11 @@ jobs:
       - lint
       - test
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: ./.github/actions/setup-node-project
 
       - name: Install Playwright Browsers
