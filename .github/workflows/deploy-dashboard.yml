@@ -11,18 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Generate & Deploy Dashboard
+  build:
+    name: Build Dashboard
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
       - uses: actions/setup-node@v4
@@ -32,10 +26,18 @@ jobs:
       - name: Install Allure CLI
         run: npm install allure@3
 
-      - name: Download twospaceships allure-results
+      - name: Download TwoSpaceships Vitest allure-results
         uses: actions/download-artifact@v4
         with:
-          name: twospaceships-allure-results
+          name: twospaceships-allure-results-vitest
+          path: TwoSpaceships/allure-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Download TwoSpaceships Playwright allure-results
+        uses: actions/download-artifact@v4
+        with:
+          name: twospaceships-allure-results-playwright
           path: TwoSpaceships/allure-results
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
@@ -51,6 +53,19 @@ jobs:
         with:
           path: dashboard/
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4

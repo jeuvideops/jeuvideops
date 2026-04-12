@@ -64,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: twospaceships-allure-results
+          name: twospaceships-allure-results-vitest
           path: ${{ env.WORK_DIR }}/allure-results/
           retention-days: 7
 
@@ -85,9 +85,26 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Install Playwright Browsers
+      - name: Get Playwright version
+        id: pw-version
         working-directory: ${{ env.WORK_DIR }}
-        run: npx playwright install --with-deps chromium
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ steps.pw-version.outputs.version }}-chromium
+
+      - name: Install Playwright Browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx playwright install chromium
+
+      - name: Install Playwright system deps
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx playwright install-deps chromium
 
       - name: Run Playwright tests
         working-directory: ${{ env.WORK_DIR }}
@@ -98,4 +115,11 @@ jobs:
         with:
           name: twospaceships-playwright-report
           path: ${{ env.WORK_DIR }}/playwright-report/
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: twospaceships-allure-results-playwright
+          path: ${{ env.WORK_DIR }}/allure-results/
           retention-days: 7
