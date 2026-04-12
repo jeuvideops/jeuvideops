@@ -1,12 +1,13 @@
-# .github/workflows/ci-two-spaceships.yml
 name: ci-two-spaceships
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,16 +17,15 @@ env:
   WorkDir: TwoSpaceships
 
 jobs:
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - uses: ./.github/actions/setup-node-project
         with:
           working-directory: ${{ env.WorkDir }}
@@ -39,11 +39,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - uses: ./.github/actions/setup-node-project
         with:
           working-directory: ${{ env.WorkDir }}
@@ -68,19 +68,21 @@ jobs:
       - lint
       - test
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - uses: ./.github/actions/setup-node-project
         with:
           working-directory: ${{ env.WorkDir }}
 
       - name: Install Playwright Browsers
+        working-directory: ${{ env.WorkDir }}
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
+        working-directory: ${{ env.WorkDir }}
         run: npx playwright test
 
       - uses: actions/upload-artifact@v4
