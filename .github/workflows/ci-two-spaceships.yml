@@ -27,6 +27,8 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WorkDir }}
 
       - name: Run ESLint
         working-directory: ${{ env.WorkDir }}
@@ -43,6 +45,8 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WorkDir }}
 
       - name: Run tests
         working-directory: ${{ env.WorkDir }}
@@ -70,6 +74,8 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WorkDir }}
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
