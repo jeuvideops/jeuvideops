@@ -32,6 +32,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Lint Summary
+        if: always()
+        run: |
+          echo "## 🔍 Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "ESLint check completed on \`$(date)\`" >> $GITHUB_STEP_SUMMARY
+
       - name: Test
         run: npm run test
 
