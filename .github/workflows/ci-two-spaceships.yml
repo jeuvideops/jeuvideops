@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  WorkDir: TwoSpaceships
+  WORK_DIR: TwoSpaceships
 
 jobs:
   lint:
@@ -28,16 +28,17 @@ jobs:
 
       - uses: ./.github/actions/setup-node-project
         with:
-          working-directory: ${{ env.WorkDir }}
+          working-directory: ${{ env.WORK_DIR }}
 
       - name: Run ESLint
-        working-directory: ${{ env.WorkDir }}
+        working-directory: ${{ env.WORK_DIR }}
         run: npm run lint
 
   test:
     name: Test & Coverage
     runs-on: ubuntu-latest
-    needs: lint
+    needs:
+      - lint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,10 +47,10 @@ jobs:
 
       - uses: ./.github/actions/setup-node-project
         with:
-          working-directory: ${{ env.WorkDir }}
+          working-directory: ${{ env.WORK_DIR }}
 
       - name: Run tests
-        working-directory: ${{ env.WorkDir }}
+        working-directory: ${{ env.WORK_DIR }}
         run: npm run test && npm run test:coverage
 
       - name: Upload coverage report
@@ -57,7 +58,7 @@ jobs:
         id: upload-report
         with:
           name: vitest-report
-          path: ${{ env.WorkDir }}/html/
+          path: ${{ env.WORK_DIR }}/html/
           retention-days: 7
 
   e2e:
@@ -75,19 +76,19 @@ jobs:
 
       - uses: ./.github/actions/setup-node-project
         with:
-          working-directory: ${{ env.WorkDir }}
+          working-directory: ${{ env.WORK_DIR }}
 
       - name: Install Playwright Browsers
-        working-directory: ${{ env.WorkDir }}
-        run: npx playwright install --with-deps
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        working-directory: ${{ env.WorkDir }}
-        run: npx playwright test
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx playwright test --config=playwright.config.js
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: ${{ env.WorkDir }}/playwright-report/
+          path: ${{ env.WORK_DIR }}/playwright-report/
           retention-days: 7
