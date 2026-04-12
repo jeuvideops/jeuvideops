@@ -1,6 +1,7 @@
 name: deploy-dashboard
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ['ci-two-spaceships']
     types: [completed]
@@ -48,6 +49,9 @@ jobs:
       - name: Generate dashboard
         run: npx allure dashboard TwoSpaceships/allure-results --output dashboard --name JeuxVideOPS
 
+      - name: LS
+        run: ls -la
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
@@ -66,6 +70,9 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
+      - name: LS
+        run: ls -la
+
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
