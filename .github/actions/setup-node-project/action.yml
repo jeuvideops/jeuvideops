@@ -1,0 +1,33 @@
+# .github/actions/setup-node-project/action.yml
+
+name: Setup Node Project
+author: sofian
+description: Checkout, setup Node, and install dependencies
+
+inputs:
+  node-version:
+    description: Node.js version
+    default: "20"
+  working-directory:
+    description: Project directory
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Node ${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npm ci
