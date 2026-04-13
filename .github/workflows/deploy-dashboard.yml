@@ -2,10 +2,10 @@ name: deploy-dashboard
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ['ci-two-spaceships']
-    types: [completed]
-    branches: [main]
+#  workflow_run:
+#    workflows: ['ci-two-spaceships']
+#    types: [completed]
+#    branches: [main]
 
 concurrency:
   group: deploy-dashboard
