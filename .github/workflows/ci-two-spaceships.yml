@@ -3,8 +3,6 @@ name: ci-two-spaceships
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -30,14 +28,10 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Run ESLint with reviewdog
-        uses: reviewdog/action-eslint@v1
-        with:
-          reporter: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }}
-          github_token: '${{ github.token }}'
-          eslint_flags: './src'
-          workdir: ${{ env.WORK_DIR }}
-          fail_level: 'error'
+      - name: Run ESLint
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm run lint
+
 
   test:
     name: Test & Coverage
@@ -91,3 +85,25 @@ jobs:
             echo "### Allure"
             echo "- Results bruts: voir artifact \`twospaceships-allure-results\` (consommé par deploy-dashboard)"
           } >> "$GITHUB_STEP_SUMMARY"
+
+
+
+
+  audit:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: npm audit
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm audit --audit-level=high
