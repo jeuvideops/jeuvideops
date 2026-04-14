@@ -30,9 +30,14 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Run ESLint
-        working-directory: ${{ env.WORK_DIR }}
-        run: npm run lint
+      - name: Run ESLint with reviewdog
+        uses: reviewdog/action-eslint@v1
+        with:
+          github_token: '${{ github.token }}'
+          reporter: 'github-pr-review'
+          eslint_flags: './src'
+          workdir: ${{ env.WORK_DIR }}
+          fail_level: 'error'
 
   test:
     name: Test & Coverage
@@ -68,3 +73,21 @@ jobs:
       - name: Run Unit & E2E Tests
         working-directory: ${{ env.WORK_DIR }}
         run: npm test
+
+      - name: Write test summary
+        if: always()
+        working-directory: ${{ env.WORK_DIR }}
+        run: |
+          {
+            echo "## 🧪 TwoSpaceships — Résultats"
+            echo ""
+            echo "### Unit (Vitest)"
+            echo "- Coverage: voir artifact \`twospaceships-coverage\`"
+            echo ""
+            echo "### E2E (Playwright)"
+            echo "- HTML report: voir artifact \`twospaceships-playwright-report\`"
+            echo "- Traces/videos : voir artifact \`twospaceships-playwright-artifacts\`"
+            echo ""
+            echo "### Allure"
+            echo "- Results bruts: voir artifact \`twospaceships-allure-results\` (consommé par deploy-dashboard)"
+          } >> "$GITHUB_STEP_SUMMARY"
