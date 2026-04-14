@@ -34,7 +34,7 @@ jobs:
         uses: reviewdog/action-eslint@v1
         with:
           github_token: '${{ github.token }}'
-          reporter: 'github-pr-review'
+          reporter: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }
           eslint_flags: './src'
           workdir: ${{ env.WORK_DIR }}
           fail_level: 'error'

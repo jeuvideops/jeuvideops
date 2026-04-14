@@ -1,7 +1,7 @@
 # .github/actions/setup-node-project/action.yml
 
 name: Setup Node Project
-author: sofian
+author: sofian-bll
 description: Checkout, setup Node, and install dependencies
 
 inputs:
