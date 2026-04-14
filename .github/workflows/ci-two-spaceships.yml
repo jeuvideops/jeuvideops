@@ -67,7 +67,6 @@ jobs:
         continue-on-error: true
 
       - name: Upload Allure results
-        id: up-allure
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -76,7 +75,6 @@ jobs:
           retention-days: 14
 
       - name: Upload Playwright HTML report
-        id: up-pw-report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -85,7 +83,6 @@ jobs:
           retention-days: 7
 
       - name: Upload Playwright traces & videos
-        id: up-pw-artifacts
         if: steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
@@ -94,7 +91,6 @@ jobs:
           retention-days: 7
 
       - name: Upload Coverage
-        id: up-coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -102,92 +98,11 @@ jobs:
           path: ${{ env.WORK_DIR }}/.out/coverage/
           retention-days: 7
 
-      - name: Write job summary
+      - name: Vitest Coverage Report
         if: always()
-        working-directory: ${{ env.WORK_DIR }}
-        env:
-          TEST_OUTCOME: ${{ steps.run-tests.outcome }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-          COMMIT: ${{ github.sha }}
-          ACTOR: ${{ github.actor }}
-          EVENT: ${{ github.event_name }}
-          URL_ALLURE: ${{ steps.up-allure.outputs.artifact-url }}
-          URL_PW_REPORT: ${{ steps.up-pw-report.outputs.artifact-url }}
-          URL_PW_ARTIFACTS: ${{ steps.up-pw-artifacts.outputs.artifact-url }}
-          URL_COVERAGE: ${{ steps.up-coverage.outputs.artifact-url }}
-        run: |
-          unit_pass=0; unit_fail=0; unit_total=0
-          e2e_pass=0; e2e_fail=0; e2e_flaky=0; e2e_skip=0
-          cov_stmt="—"; cov_branch="—"; cov_func="—"; cov_line="—"
-
-          if [ -f .out/vitest-report.json ]; then
-            unit_pass=$(jq -r '.numPassedTests // 0' .out/vitest-report.json)
-            unit_fail=$(jq -r '.numFailedTests // 0' .out/vitest-report.json)
-            unit_total=$(jq -r '.numTotalTests // 0' .out/vitest-report.json)
-          fi
-          if [ -f .out/playwright-report.json ]; then
-            e2e_pass=$(jq -r '.stats.expected // 0' .out/playwright-report.json)
-            e2e_fail=$(jq -r '.stats.unexpected // 0' .out/playwright-report.json)
-            e2e_flaky=$(jq -r '.stats.flaky // 0' .out/playwright-report.json)
-            e2e_skip=$(jq -r '.stats.skipped // 0' .out/playwright-report.json)
-          fi
-          if [ -f .out/coverage/coverage-summary.json ]; then
-            cov_stmt=$(jq -r '.total.statements.pct' .out/coverage/coverage-summary.json)
-            cov_branch=$(jq -r '.total.branches.pct' .out/coverage/coverage-summary.json)
-            cov_func=$(jq -r '.total.functions.pct' .out/coverage/coverage-summary.json)
-            cov_line=$(jq -r '.total.lines.pct' .out/coverage/coverage-summary.json)
-          fi
-
-          STATUS_EMOJI="✅"; STATUS_LABEL="Passed"
-          if [ "$TEST_OUTCOME" = "failure" ]; then
-            STATUS_EMOJI="❌"; STATUS_LABEL="Failed"
-          fi
-          unit_icon="✅"; [ "$unit_fail" -gt 0 ] && unit_icon="❌"
-          e2e_icon="✅"; [ "$e2e_fail" -gt 0 ] && e2e_icon="❌"
-          e2e_total=$((e2e_pass + e2e_fail + e2e_flaky + e2e_skip))
-          SHORT_SHA="${COMMIT:0:7}"
-
-          {
-            echo "## ${STATUS_EMOJI} TwoSpaceships — Test Results"
-            echo ""
-            echo "| | |"
-            echo "|---|---|"
-            echo "| **Status** | ${STATUS_EMOJI} ${STATUS_LABEL} |"
-            echo "| **Branch** | \`${BRANCH}\` |"
-            echo "| **Commit** | [\`${SHORT_SHA}\`](${{ github.server_url }}/${{ github.repository }}/commit/${COMMIT}) |"
-            echo "| **Triggered by** | \`${ACTOR}\` via \`${EVENT}\` |"
-            echo "| **Run** | [#${{ github.run_number }}](${RUN_URL}) |"
-            echo ""
-            echo "### 🧪 Tests"
-            echo "| Suite | Status | Passed | Failed | Total |"
-            echo "|---|---|---|---|---|"
-            echo "| 🔬 Unit (Vitest) | $unit_icon | $unit_pass | $unit_fail | $unit_total |"
-            echo "| 🎭 E2E (Playwright) | $e2e_icon | $e2e_pass | $e2e_fail | $e2e_total |"
-            echo ""
-            echo "### 📊 Coverage (v8)"
-            echo "| Statements | Branches | Functions | Lines |"
-            echo "|---|---|---|---|"
-            echo "| ${cov_stmt}% | ${cov_branch}% | ${cov_func}% | ${cov_line}% |"
-            echo ""
-            echo "### 📦 Artifacts"
-            echo "| Artifact | Link |"
-            echo "|---|---|"
-            echo "| 📊 Allure results (→ deploy-dashboard) | [Download](${URL_ALLURE}) |"
-            echo "| 🎬 Playwright HTML report | [Download](${URL_PW_REPORT}) |"
-            if [ -n "${URL_PW_ARTIFACTS}" ]; then
-              echo "| 🎥 Traces & videos *(failures only)* | [Download](${URL_PW_ARTIFACTS}) |"
-            fi
-            echo "| 🧬 Coverage HTML | [Download](${URL_COVERAGE}) |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$TEST_OUTCOME" = "failure" ]; then
-            {
-              echo ""
-              echo "> [!CAUTION]"
-              echo "> Tests have failed. Check the [run logs](${RUN_URL}) and Playwright artifacts for details."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ${{ env.WORK_DIR }}
 
       - name: Fail job if tests failed
         if: steps.run-tests.outcome == 'failure'
@@ -205,62 +120,11 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Run npm audit (JSON capture)
-        working-directory: ${{ env.WORK_DIR }}
-        run: npm audit --json > ../audit.json || true
-
-      - name: Enforce high/critical threshold
+      - name: Run npm audit
         id: audit
         working-directory: ${{ env.WORK_DIR }}
         run: npm audit --audit-level=high
         continue-on-error: true
-
-      - name: Write audit summary
-        if: always()
-        env:
-          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-        run: |
-          crit=$(jq -r '.metadata.vulnerabilities.critical // 0' audit.json)
-          high=$(jq -r '.metadata.vulnerabilities.high // 0' audit.json)
-          mod=$(jq -r '.metadata.vulnerabilities.moderate // 0' audit.json)
-          low=$(jq -r '.metadata.vulnerabilities.low // 0' audit.json)
-          info=$(jq -r '.metadata.vulnerabilities.info // 0' audit.json)
-
-          if [ "$AUDIT_OUTCOME" = "success" ]; then
-            STATUS_EMOJI="✅"; STATUS_LABEL="No high/critical vulnerabilities"
-          else
-            STATUS_EMOJI="⚠️"; STATUS_LABEL="Vulnerabilities found"
-          fi
-
-          {
-            echo "## ${STATUS_EMOJI} TwoSpaceships — npm Audit"
-            echo ""
-            echo "| | |"
-            echo "|---|---|"
-            echo "| **Status** | ${STATUS_EMOJI} ${STATUS_LABEL} |"
-            echo "| **Branch** | \`${BRANCH}\` |"
-            echo "| **Level** | \`--audit-level=high\` |"
-            echo "| **Run** | [#${{ github.run_number }}](${RUN_URL}) |"
-            echo ""
-            echo "### 🔐 Vulnerabilities"
-            echo "| Severity | Count |"
-            echo "|---|---|"
-            echo "| 🔴 Critical | $crit |"
-            echo "| 🟠 High | $high |"
-            echo "| 🟡 Moderate | $mod |"
-            echo "| 🔵 Low | $low |"
-            echo "| ⚪ Info | $info |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$AUDIT_OUTCOME" = "failure" ]; then
-            {
-              echo ""
-              echo "> [!WARNING]"
-              echo "> High or critical vulnerabilities detected. Run \`npm audit\` locally and review the [run logs](${RUN_URL})."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Fail job if audit failed
         if: steps.audit.outcome == 'failure'
