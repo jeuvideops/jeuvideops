@@ -34,6 +34,8 @@ jobs:
   test:
     name: Test & Coverage
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs: lint
     steps:
       - uses: actions/checkout@v4
