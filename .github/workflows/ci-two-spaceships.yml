@@ -30,19 +30,10 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Determine reviewdog reporter
-        id: rd
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "reporter=github-pr-review" >> "$GITHUB_OUTPUT"
-          else
-            echo "reporter=github-check" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Run ESLint with reviewdog
         uses: reviewdog/action-eslint@v1
         with:
-          reporter: ${{ steps.rd.outputs.reporter }}
+          reporter: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }}
           github_token: '${{ github.token }}'
           eslint_flags: './src'
           workdir: ${{ env.WORK_DIR }}
