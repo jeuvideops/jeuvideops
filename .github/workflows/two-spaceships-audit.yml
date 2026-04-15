@@ -33,6 +33,17 @@ jobs:
       - name: Run npm audit
         uses: ./.github/actions/npm-audit-summary
 
+      - name: Generate HTML report
+        run: npm audit --json | audit-export
+
+      - name: Upload Audit HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-npm-audit-report
+          path: ${{ env.WORK_DIR }}/audit-report.html
+          retention-days: 7
+
       - name: Fail job if audit failed
         if: steps.audit.outcome == 'failure'
         run: exit 1
