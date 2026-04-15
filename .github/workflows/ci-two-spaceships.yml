@@ -1,11 +1,17 @@
 name: ci-two-spaceships
 
 on:
+  workflow_dispatch:
   push:
     paths: ['TwoSpaceships/**', '.github/**']
   pull_request:
     branches: [main]
     paths: ['TwoSpaceships/**', '.github/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
