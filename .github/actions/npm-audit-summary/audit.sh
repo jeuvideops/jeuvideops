@@ -24,4 +24,4 @@ fi
   echo "| 🟠 High | $HIGH |"
   echo "| 🟡 Moderate | $MODERATE |"
   echo "| 🔵 Low | $LOW |"
-} >> test.md
+} >> "$GITHUB_STEP_SUMMARY"
