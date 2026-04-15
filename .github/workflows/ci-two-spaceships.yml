@@ -91,17 +91,14 @@ jobs:
           path: ${{ env.WORK_DIR }}/.out/coverage/
           retention-days: 7
 
-      - run : tree -I node_modules
       - name: Vitest Coverage Report
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
         with:
-          working-directory: ${{ env.WORK_DIR }}
           json-summary-path: .out/coverage/coverage-summary.json
           json-final-path: .out/coverage/coverage-final.json
           threshold-icons: '{"0": "🔴", "80": "🟠", "90": "🟢"}'
 
-      - run : tree -I node_modules
       - name: Fail job if tests failed
         if: steps.run-tests.outcome == 'failure'
         run: exit 1
