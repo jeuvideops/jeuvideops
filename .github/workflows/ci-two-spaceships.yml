@@ -96,10 +96,11 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ${{ env.WORK_DIR }}
-          json-summary-path: ${{ env.WORK_DIR }}/.out/coverage/coverage-summary.json
-          json-final-path: ${{ env.WORK_DIR }}/.out/coverage/coverage-final.json
+          json-summary-path: /.out/coverage/coverage-summary.json
+          json-final-path: .out/coverage/coverage-final.json
           threshold-icons: '{"0": "🔴", "80": "🟠", "90": "🟢"}'
 
+      - run: find ~ -name "coverage-summary.json" 2>/dev/null && find ~ -name "coverage-final.json" 2>/dev/null
       - name: Fail job if tests failed
         if: steps.run-tests.outcome == 'failure'
         run: exit 1
