@@ -2,9 +2,9 @@ name: ci-two-spaceships
 
 on:
   workflow_dispatch:
-  push:
+  #  push:
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -117,21 +117,13 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-#      - name: Run npm audit
-#        id: audit
-#        working-directory: ${{ env.WORK_DIR }}
-#        run: npm audit --audit-level high
-#        continue-on-error: true
-#        env:
-#          CI: true
+      - name: Run npm audit
+        id: audit
+        continue-on-error: true
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm audit
 
-      - name: 'Audit Dependency'
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
-          comment-summary-in-pr: on-failure
+      - name: Fail job if audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
 
-#
-#      - name: Fail job if audit failed
-#        if: steps.audit.outcome == 'failure'
-#        run: exit 1
