@@ -1,0 +1,136 @@
+name: ci-space-invaders
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WORK_DIR: SpaceInvaders
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Run ESLint
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm run lint
+
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Playwright Browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx playwright install chromium
+
+      - name: Install Playwright system deps
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx playwright install-deps
+
+      - name: Run Unit & E2E Tests
+        id: run-tests
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm test
+        continue-on-error: true
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-allure-results
+          path: ${{ env.WORK_DIR }}/.out/allure-results/
+          retention-days: 14
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-playwright-report
+          path: ${{ env.WORK_DIR }}/.out/e2e-report/
+          retention-days: 7
+
+      - name: Upload Playwright traces & videos
+        if: steps.run-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-playwright-artifacts
+          path: ${{ env.WORK_DIR }}/.out/playwright-test-results/
+          retention-days: 7
+
+      - name: Upload Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-coverage
+          path: ${{ env.WORK_DIR }}/.out/coverage/
+          retention-days: 7
+
+      - name: Vitest Coverage Report
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+          json-summary-path: .out/coverage/coverage-summary.json
+          json-final-path: .out/coverage/coverage-final.json
+          threshold-icons: "{0: '🔴', 80: '🟠', 90: '🟢'}"
+
+      - name: Fail job if tests failed
+        if: steps.run-tests.outcome == 'failure'
+        run: exit 1
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Run npm audit
+        id: audit
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Fail job if audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
