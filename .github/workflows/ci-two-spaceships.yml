@@ -51,22 +51,6 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright Browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        working-directory: ${{ env.WORK_DIR }}
-        run: npx playwright install chromium
-
-      - name: Install Playwright system deps
-        working-directory: ${{ env.WORK_DIR }}
-        run: npx playwright install-deps
-
       - name: Run Unit & E2E Tests
         id: run-tests
         working-directory: ${{ env.WORK_DIR }}
