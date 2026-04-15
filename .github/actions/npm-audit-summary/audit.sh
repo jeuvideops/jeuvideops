@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+cd "$WORK_DIR"
 set -euo pipefail # Convention Bash : Script sûr
 
 npm audit --json 2>/dev/null > audit.json || true
