@@ -118,10 +118,7 @@ jobs:
           working-directory: ${{ env.WORK_DIR }}
 
       - name: Run npm audit
-        id: audit
-        continue-on-error: true
-        working-directory: ${{ env.WORK_DIR }}
-        run: npm audit
+        uses: ./.github/actions/npm-audit-summary
 
       - name: Fail job if audit failed
         if: steps.audit.outcome == 'failure'
