@@ -33,8 +33,11 @@ jobs:
       - name: Run npm audit
         uses: ./.github/actions/npm-audit-summary
 
+
       - name: Generate HTML report
         run: npm audit --json | npx audit-export
+        with:
+          working-directory: ${{ env.WORK_DIR }}
 
       - name: Upload Audit HTML report
         if: always()
