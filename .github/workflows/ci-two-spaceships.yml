@@ -120,8 +120,10 @@ jobs:
       - name: Run npm audit
         id: audit
         working-directory: ${{ env.WORK_DIR }}
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level high
         continue-on-error: true
+        env:
+          CI: true
 
       - name: Fail job if audit failed
         if: steps.audit.outcome == 'failure'
