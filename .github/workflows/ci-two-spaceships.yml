@@ -56,6 +56,7 @@ jobs:
         continue-on-error: true
 
       - name: Generate Reports
+        working-directory: ${{ env.WORK_DIR }}
         run: npm run reports
 
       - name: Upload Allure results
