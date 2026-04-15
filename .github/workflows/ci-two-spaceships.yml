@@ -56,7 +56,7 @@ jobs:
         continue-on-error: true
 
       - name: Generate Reports
-        run: npm reports
+        run: npm run reports
 
       - name: Upload Allure results
         if: always()
