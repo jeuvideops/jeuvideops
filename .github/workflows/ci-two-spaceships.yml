@@ -95,6 +95,7 @@ jobs:
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
         with:
+          working-directory: ${{ env.WORK_DIR }}
           json-summary-path: .out/coverage/coverage-summary.json
           json-final-path: .out/coverage/coverage-final.json
           threshold-icons: '{"0": "🔴", "80": "🟠", "90": "🟢"}'
