@@ -99,6 +99,7 @@ jobs:
           json-summary-path: .out/coverage/coverage-summary.json
           json-final-path: .out/coverage/coverage-final.json
           threshold-icons: '{"0": "🔴", "80": "🟠", "90": "🟢"}'
+          file-coverage-mode: all
 
       - name: Fail job if tests failed
         if: steps.run-tests.outcome == 'failure'
