@@ -116,7 +116,6 @@ jobs:
       - uses: ./.github/actions/setup-node-project
         with:
           working-directory: ${{ env.WORK_DIR }}
-      - run: npm install -D -g audit-reports
 
       - name: Run npm audit summary
         uses: ./.github/actions/npm-audit-summary

@@ -34,7 +34,7 @@ jobs:
         uses: ./.github/actions/npm-audit-summary
 
       - name: Generate HTML report
-        run: npm audit --json | audit-export
+        run: npm audit --json | npx audit-export
 
       - name: Upload Audit HTML report
         if: always()
