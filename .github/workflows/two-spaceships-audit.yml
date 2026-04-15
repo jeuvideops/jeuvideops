@@ -35,9 +35,8 @@ jobs:
 
 
       - name: Generate HTML report
+        working-directory: ${{ env.WORK_DIR }}
         run: npm audit --json | npx audit-export
-        with:
-          working-directory: ${{ env.WORK_DIR }}
 
       - name: Upload Audit HTML report
         if: always()
