@@ -1,7 +1,6 @@
 import { PolarVector } from './math/polar-vector';
 import { WORLD_SIZE } from './config';
 
-// eslint-disable-next-line no-unused-vars
 export enum Type {
   Basic = 'Basic',
   Spinner = 'Spinner',
