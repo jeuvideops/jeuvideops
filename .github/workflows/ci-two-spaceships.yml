@@ -1,10 +1,10 @@
 name: ci-two-spaceships
 
 on:
-  workflow_dispatch:
-  push:
+  #  push:
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read

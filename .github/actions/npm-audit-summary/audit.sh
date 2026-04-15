@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-chmod +x
 set -euo pipefail # Convention Bash : Script sûr
 
 npm audit --json 2>/dev/null > audit.json || true
