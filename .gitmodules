@@ -1,6 +1,6 @@
 [submodule "SpaceInvaders"]
 	path = SpaceInvaders
-	url = git@github.com:jeuvideops/SpaceInvaders.git
+	url = https://github.com/jeuvideops/SpaceInvaders.git
 [submodule "TwoSpaceships"]
 	path = TwoSpaceships
-	url = git@github.com:jeuvideops/TwoSpaceships.git
+	url = https://github.com/jeuvideops/TwoSpaceships.git
