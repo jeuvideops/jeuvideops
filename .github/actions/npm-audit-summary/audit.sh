@@ -17,6 +17,10 @@ if [ "$HIGH" -gt 0 ]; then
   echo "::warning::🟠 $HIGH high vulnerabilities found"
 fi
 
+if [ "$MODERATE" -gt 0 ]; then
+  echo "::warning::🟠 $HIGH high vulnerabilities found"
+fi
+
 {
   echo "## 🔒 npm audit"
   echo "| Severity | Count |"
