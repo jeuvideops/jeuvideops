@@ -3,7 +3,7 @@ name: ci-two-spaceships
 on:
   push:
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -132,6 +132,39 @@ jobs:
         if: steps.e2e-tests.outcome == 'failure'
         run: exit 1
 
+  generate-test-report:
+    name: Allure - E2E & Unit Report
+    runs-on: ubuntu-latest
+    needs: [ 'unit-test','e2e-test' ]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Download Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: twospaceships-allure-results-*
+          path: ${{ env.WORK_DIR }}/.out/allure-results/
+          merge-multiple: true
+
+      - name: Generate Allure Report
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm run reports
+
+      - name: Upload Allure Tests Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-allure-tests-report
+          path: ${{ env.WORK_DIR }}/.out/allure-report/
+          retention-days: 7
+
   audit:
     name: Audit
     runs-on: ubuntu-latest
@@ -166,10 +199,10 @@ jobs:
         if: steps.audit.outcome == 'failure'
         run: exit 1
 
-  report:
+  PR-report:
     name: PR Summary
     runs-on: ubuntu-latest
-    needs: [lint, unit-test, e2e-test, audit]
+    needs: [ lint, unit-test, e2e-test, audit ]
     if: always() && github.event_name == 'pull_request'
     steps:
       - uses: marocchino/sticky-pull-request-comment@v2
