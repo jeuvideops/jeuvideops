@@ -31,6 +31,19 @@ fi
   echo "| 🔵 Low | $LOW |"
 } >> "$GITHUB_STEP_SUMMARY"
 
+cat <<EOF > "$GITHUB_STEP_SUMMARY"
+NPM Audit Summary for TwoSpaceships
+---
+---
+
+|    Severity     |       Count        |
+|:---------------:|:------------------:|
+| 🔴 **Critical** | \`${CRITICAL:-0}\` |
+|   🟠 **High**   |   \`${HIGH:-0}\`   |
+| 🟡 **Moderate** | \`${MODERATE:-0}\` |
+|   🔵 **Low**    |   \`${LOW:-0}\`    |
+EOF
+
 if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
   exit 1
 fi
