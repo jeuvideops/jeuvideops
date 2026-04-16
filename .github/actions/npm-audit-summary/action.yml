@@ -1,0 +1,10 @@
+name: npm audit summary
+author: sofian-bll
+description: Run npm audit and write a step summary
+
+runs:
+  using: composite
+  steps:
+    - name: Run audit script
+      shell: bash
+      run: ${{ github.action_path }}/audit.sh

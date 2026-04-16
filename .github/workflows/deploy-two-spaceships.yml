@@ -1,0 +1,128 @@
+name: deploy-two-spaceships
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write      # ghcr.io
+  pages: write         # GitHub Pages
+  id-token: write      # OIDC pour deploy-pages
+
+env:
+  WORK_DIR: TwoSpaceships
+
+jobs:
+
+  docker-ghcr:
+    name: Build & Push to ghcr.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/twospaceships
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Docker Hub & Pages
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/${{ vars.DOCKERHUB_USERNAME }}/twospaceships
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push to Docker Hub
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Build game
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx gulp build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.WORK_DIR }}/dist/min/
+
+      - uses: actions/deploy-pages@v4
+
+  pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Build
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx gulp build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.WORK_DIR }}/dist/min/
+
+      - uses: actions/deploy-pages@v4

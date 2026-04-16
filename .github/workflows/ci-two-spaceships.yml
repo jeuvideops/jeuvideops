@@ -2,10 +2,14 @@ name: ci-two-spaceships
 
 on:
   push:
-    paths: ['TwoSpaceships/**', '.github/**']
   pull_request:
-    branches: [main]
-    paths: ['TwoSpaceships/**', '.github/**']
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,13 +32,11 @@ jobs:
 
       - name: Run ESLint
         working-directory: ${{ env.WORK_DIR }}
-        run: npm run lint:github
+        run: npm run lint:gha
 
-  test:
-    name: Test & Coverage
+  unit-test:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs: lint
     steps:
       - uses: actions/checkout@v4
@@ -45,51 +47,19 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright Browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - name: Run Unit Tests
+        id: unit-tests
         working-directory: ${{ env.WORK_DIR }}
-        run: npx playwright install chromium
-
-      - name: Install Playwright system deps
-        working-directory: ${{ env.WORK_DIR }}
-        run: npx playwright install-deps
-
-      - name: Run Unit & E2E Tests
-        id: run-tests
-        working-directory: ${{ env.WORK_DIR }}
-        run: npm test
+        run: npm run test:unit
         continue-on-error: true
 
       - name: Upload Allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: twospaceships-allure-results
+          name: twospaceships-allure-results-unit
           path: ${{ env.WORK_DIR }}/.out/allure-results/
           retention-days: 14
-
-      - name: Upload Playwright HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: twospaceships-playwright-report
-          path: ${{ env.WORK_DIR }}/.out/e2e-report/
-          retention-days: 7
-
-      - name: Upload Playwright traces & videos
-        if: steps.run-tests.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: twospaceships-playwright-artifacts
-          path: ${{ env.WORK_DIR }}/.out/playwright-test-results/
-          retention-days: 7
 
       - name: Upload Coverage
         if: always()
@@ -104,13 +74,96 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ${{ env.WORK_DIR }}
-          json-summary-path: ${{ env.WORK_DIR }}/.out/coverage/coverage-summary.json
-          json-final-path: ${{ env.WORK_DIR }}/.out/coverage/coverage-final.json
+          json-summary-path: .out/coverage/coverage-summary.json
+          json-final-path: .out/coverage/coverage-final.json
           threshold-icons: '{"0": "🔴", "80": "🟠", "90": "🟢"}'
+          file-coverage-mode: all
 
-      - name: Fail job if tests failed
-        if: steps.run-tests.outcome == 'failure'
+      - name: Fail job if unit tests failed
+        if: steps.unit-tests.outcome == 'failure'
         run: exit 1
+
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Run E2E Tests
+        id: e2e-tests
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm run test:e2e
+        continue-on-error: true
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-allure-results-e2e
+          path: ${{ env.WORK_DIR }}/.out/allure-results/
+          retention-days: 14
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-playwright-report
+          path: ${{ env.WORK_DIR }}/.out/e2e-report/
+          retention-days: 7
+
+      - name: Upload Playwright traces & videos
+        if: steps.e2e-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-playwright-artifacts
+          path: ${{ env.WORK_DIR }}/.out/playwright-test-results/
+          retention-days: 7
+
+      - name: Fail job if E2E tests failed
+        if: steps.e2e-tests.outcome == 'failure'
+        run: exit 1
+
+  generate-test-report:
+    name: Allure - E2E & Unit Report
+    runs-on: ubuntu-latest
+    needs: [ 'unit-test','e2e-test' ]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Download Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: twospaceships-allure-results-*
+          path: ${{ env.WORK_DIR }}/.out/allure-results/
+          merge-multiple: true
+
+      - name: Generate Allure Report
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm run reports
+
+      - name: Upload Allure Tests Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-allure-tests-report
+          path: ${{ env.WORK_DIR }}/.out/allure-report/
+          retention-days: 7
 
   audit:
     name: Audit
@@ -124,12 +177,46 @@ jobs:
         with:
           working-directory: ${{ env.WORK_DIR }}
 
-      - name: Run npm audit
+      - name: Run npm audit & summary
         id: audit
-        working-directory: ${{ env.WORK_DIR }}
-        run: npm audit --audit-level=high
         continue-on-error: true
+        uses: ./.github/actions/npm-audit-summary
+
+      - name: Generate HTML report
+        if: always()
+        working-directory: ${{ env.WORK_DIR }}
+        run: npm audit --omit=dev --json | npx audit-export
+
+      - name: Upload Audit HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twospaceships-npm-audit-report
+          path: ${{ env.WORK_DIR }}/audit-report.html
+          retention-days: 7
 
       - name: Fail job if audit failed
         if: steps.audit.outcome == 'failure'
         run: exit 1
+
+  PR-report:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [ lint, unit-test, e2e-test, audit ]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ci-two-spaceships
+          recreate: true
+          message: |
+            ## CI Report — TwoSpaceships
+
+            | Job | Status |
+            |-----|--------|
+            | Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Unit Tests | ${{ needs.unit-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | E2E Tests | ${{ needs.e2e-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | npm audit | ${{ needs.audit.result == 'success' && '✅ Clean' || '⚠️ Issues' }} |
+
+            [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
