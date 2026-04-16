@@ -2,9 +2,9 @@ name: deploy-two-spaceships
 
 on:
   push:
-#  workflow_run:
-#    workflows: [ci-two-spaceships]
-#    types: [completed]
+  workflow_run:
+    workflows: [ci-two-spaceships]
+    types: [completed]
 #    branches: [main]
 
 permissions:
