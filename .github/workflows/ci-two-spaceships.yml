@@ -1,7 +1,7 @@
 name: ci-two-spaceships
 
 on:
-  push:
+#  push:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -136,6 +136,6 @@ jobs:
           path: ${{ env.WORK_DIR }}/audit-report.html
           retention-days: 7
 
-#      - name: Fail job if audit failed
-#        if: steps.audit.outcome == 'failure'
-#        run: exit 1
+      - name: Fail job if audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
