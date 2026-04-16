@@ -21,19 +21,18 @@ if [ "$MODERATE" -gt 0 ]; then
   echo "::warning::🟡 $MODERATE moderate vulnerabilities found"
 fi
 
-{
-  echo "## 🔒 npm audit"
-  echo "| Severity | Count |"
-  echo "|----------|-------|"
-  echo "| 🔴 Critical | $CRITICAL |"
-  echo "| 🟠 High | $HIGH |"
-  echo "| 🟡 Moderate | $MODERATE |"
-  echo "| 🔵 Low | $LOW |"
-} >> "$GITHUB_STEP_SUMMARY"
+#{
+#  echo "## 🔒 npm audit"
+#  echo "| Severity | Count |"
+#  echo "|----------|-------|"
+#  echo "| 🔴 Critical | $CRITICAL |"
+#  echo "| 🟠 High | $HIGH |"
+#  echo "| 🟡 Moderate | $MODERATE |"
+#  echo "| 🔵 Low | $LOW |"
+#} >> "$GITHUB_STEP_SUMMARY"
 
-cat <<EOF > "$GITHUB_STEP_SUMMARY"
+cat <<EOF >> "$GITHUB_STEP_SUMMARY"
 NPM Audit Summary for TwoSpaceships
----
 ---
 
 |    Severity     |       Count        |
