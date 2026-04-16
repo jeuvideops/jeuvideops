@@ -123,10 +123,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download site artifacts only
         uses: actions/download-artifact@v5
         with:
           path: .artifacts
+          pattern: site-*
+          merge-multiple: false
+          repository: jeuvideops/jeuvideops
+          run-id: ${{ github.run_id }}
 
       - name: Assemble central site
         run: |
