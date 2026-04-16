@@ -2,7 +2,7 @@
 cd "$WORK_DIR"
 set -euo pipefail # Convention Bash : Script sûr
 
-npm audit --json 2>/dev/null > audit.json || true
+npm audit --audit-level=high --json 2>/dev/null > audit.json || true
 
 CRITICAL=$(jq '.metadata.vulnerabilities.critical' audit.json)
 HIGH=$(jq '.metadata.vulnerabilities.high' audit.json)
@@ -18,7 +18,7 @@ if [ "$HIGH" -gt 0 ]; then
 fi
 
 if [ "$MODERATE" -gt 0 ]; then
-  echo "::warning::🟠 $HIGH high vulnerabilities found"
+  echo "::warning::🟡 $MODERATE moderate vulnerabilities found"
 fi
 
 {
@@ -30,3 +30,7 @@ fi
   echo "| 🟡 Moderate | $MODERATE |"
   echo "| 🔵 Low | $LOW |"
 } >> "$GITHUB_STEP_SUMMARY"
+
+if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+  exit 1
+fi
