@@ -11,5 +11,3 @@ node_modules/
 dashboard/
 TwoSpaceships/.out
 /.github/actions/npm-audit-summary/audit.json
-/TwoSpaceships/audit.json
-/TwoSpaceships/audit-report.html
