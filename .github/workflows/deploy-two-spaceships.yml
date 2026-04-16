@@ -1,0 +1,159 @@
+name: deploy-two-spaceships
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
+env:
+  WORK_DIR: TwoSpaceships
+
+jobs:
+  build-twospaceships:
+    name: Build TwoSpaceships Artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Build game
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx gulp build
+
+      - name: Upload static artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-twospaceships
+          path: ${{ env.WORK_DIR }}/dist/min/
+          retention-days: 7
+
+  docker-ghcr:
+    name: Build & Push to ghcr.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/twospaceships
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-hub:
+    name: Build & Push to Docker Hub
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/${{ vars.DOCKERHUB_USERNAME }}/twospaceships
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-pages-central:
+    name: Deploy Central GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [build-twospaceships]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: .artifacts
+
+      - name: Assemble central site
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          cp ".github/pages/index.html" "site/index.html"
+
+          for artifact_dir in .artifacts/site-*; do
+            if [ ! -d "$artifact_dir" ]; then
+              continue
+            fi
+
+            game_name="${artifact_dir##*/site-}"
+            mkdir -p "site/$game_name"
+            cp -R "$artifact_dir"/. "site/$game_name/"
+          done
+
+          if [ ! -d "site/twospaceships" ]; then
+            echo "No TwoSpaceships artifact found to publish." >&2
+            exit 1
+          fi
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

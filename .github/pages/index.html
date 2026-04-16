@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JeuVideOps Dashboard</title>
+    <style>
+      :root {
+        --bg: #0b1320;
+        --bg-soft: #111a2b;
+        --panel: #15213a;
+        --text: #e6edf8;
+        --muted: #9eb0cc;
+        --accent: #4ea1ff;
+        --accent-2: #91d1ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(1200px 700px at 80% -10%, rgba(78, 161, 255, 0.25), transparent 55%),
+          radial-gradient(900px 600px at -10% 90%, rgba(145, 209, 255, 0.15), transparent 60%),
+          linear-gradient(160deg, var(--bg), var(--bg-soft));
+        color: var(--text);
+      }
+
+      main {
+        width: min(960px, 92vw);
+        margin: 0 auto;
+        padding: 4rem 0 5rem;
+      }
+
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(1.8rem, 2.8vw, 3rem);
+        letter-spacing: 0.02em;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-top: 2.2rem;
+      }
+
+      .card {
+        display: block;
+        padding: 1.25rem;
+        border: 1px solid rgba(158, 176, 204, 0.2);
+        border-radius: 14px;
+        text-decoration: none;
+        color: inherit;
+        background: linear-gradient(180deg, rgba(21, 33, 58, 0.95), rgba(15, 24, 42, 0.95));
+        transition: transform 160ms ease, border-color 160ms ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(78, 161, 255, 0.55);
+      }
+
+      .card h2 {
+        margin: 0 0 0.55rem;
+        font-size: 1.1rem;
+      }
+
+      .chip {
+        display: inline-block;
+        margin-top: 0.85rem;
+        padding: 0.22rem 0.56rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        color: var(--accent-2);
+        border: 1px solid rgba(145, 209, 255, 0.4);
+      }
+
+      footer {
+        margin-top: 2.2rem;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>JeuVideOps</h1>
+      <p>
+        Central dashboard for game deployments. This template is temporary and can be replaced
+        with your final HTML anytime.
+      </p>
+
+      <section class="grid">
+        <a class="card" href="./twospaceships/">
+          <h2>TwoSpaceships</h2>
+          <p>Open the latest TwoSpaceships build published by the orchestrator workflow.</p>
+          <span class="chip">Live Build</span>
+        </a>
+      </section>
+
+      <footer>
+        Add more cards later (for example SpaceInvaders) by publishing a site-&lt;name&gt; artifact.
+      </footer>
+    </main>
+  </body>
+</html>
