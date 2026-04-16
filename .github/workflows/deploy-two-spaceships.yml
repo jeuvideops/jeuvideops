@@ -3,6 +3,13 @@ name: deploy-two-spaceships
 on:
   push:
     branches: [main]
+    paths:
+      - 'TwoSpaceships'
+      - 'TwoSpaceships/**'
+      - '.gitmodules'
+      - '.github/workflows/deploy-two-spaceships.yml'
+      - '.github/pages/**'
+      - '.github/actions/setup-node-project/**'
   workflow_dispatch:
 
 permissions:
@@ -67,6 +74,8 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
         with:
           context: ${{ env.WORK_DIR }}
           push: true
@@ -104,6 +113,8 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
         with:
           context: ${{ env.WORK_DIR }}
           push: true
@@ -123,14 +134,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download site artifacts only
+      - name: Download TwoSpaceships site artifact
         uses: actions/download-artifact@v5
         with:
-          path: .artifacts
-          pattern: site-*
-          merge-multiple: false
-          repository: jeuvideops/jeuvideops
-          run-id: ${{ github.run_id }}
+          name: site-twospaceships
+          path: .artifacts/site-twospaceships
 
       - name: Assemble central site
         run: |
@@ -138,20 +146,13 @@ jobs:
           mkdir -p site
           cp ".github/pages/index.html" "site/index.html"
 
-          for artifact_dir in .artifacts/site-*; do
-            if [ ! -d "$artifact_dir" ]; then
-              continue
-            fi
-
-            game_name="${artifact_dir##*/site-}"
-            mkdir -p "site/$game_name"
-            cp -R "$artifact_dir"/. "site/$game_name/"
-          done
-
-          if [ ! -d "site/twospaceships" ]; then
+          if [ ! -d ".artifacts/site-twospaceships" ]; then
             echo "No TwoSpaceships artifact found to publish." >&2
             exit 1
           fi
+
+          mkdir -p "site/twospaceships"
+          cp -R ".artifacts/site-twospaceships"/. "site/twospaceships/"
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
