@@ -1,7 +1,7 @@
 name: ci-two-spaceships
 
 on:
-  push:
+#  push:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
