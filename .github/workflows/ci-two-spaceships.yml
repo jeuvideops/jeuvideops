@@ -118,6 +118,7 @@ jobs:
           working-directory: ${{ env.WORK_DIR }}
 
       - name: Run npm audit
+        id: audit
         uses: ./.github/actions/npm-audit-summary
 
 
