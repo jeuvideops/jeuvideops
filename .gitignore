@@ -10,3 +10,4 @@ node_modules/
 # Generated — do not commit
 dashboard/
 TwoSpaceships/.out
+/.github/actions/npm-audit-summary/audit.json
