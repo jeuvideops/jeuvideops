@@ -2,7 +2,7 @@
 cd "$WORK_DIR"
 set -euo pipefail # Convention Bash : Script sûr
 
-npm audit --audit-level=high --json 2>/dev/null > audit.json || true
+npm audit --audit-level=high --omit=dev --json 2>/dev/null > audit.json || true
 
 CRITICAL=$(jq '.metadata.vulnerabilities.critical' audit.json)
 HIGH=$(jq '.metadata.vulnerabilities.high' audit.json)

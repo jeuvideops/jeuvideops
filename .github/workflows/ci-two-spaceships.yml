@@ -185,7 +185,7 @@ jobs:
       - name: Generate HTML report
         if: always()
         working-directory: ${{ env.WORK_DIR }}
-        run: npm audit --json | npx audit-export
+        run: npm audit --omit=dev --json | npx audit-export
 
       - name: Upload Audit HTML report
         if: always()
