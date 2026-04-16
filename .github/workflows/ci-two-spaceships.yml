@@ -28,7 +28,7 @@ jobs:
 
       - name: Run ESLint
         working-directory: ${{ env.WORK_DIR }}
-        run: npm run lint:github
+        run: npm run lint:gha
 
   test:
     name: Test & Coverage
