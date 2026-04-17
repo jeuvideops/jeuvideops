@@ -3,9 +3,17 @@ name: ci-space-invaders
 on:
   workflow_dispatch:
   push:
+    branches: [main]
+    paths:
+      - 'SpaceInvaders/**'
+      - '.github/workflows/ci-space-invaders.yml'
+      - '.github/actions/**'
   pull_request:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - 'SpaceInvaders/**'
+      - '.github/workflows/ci-space-invaders.yml'
+      - '.github/actions/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,8 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - uses: ./.github/actions/setup-node-project
         with:
@@ -39,8 +45,6 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - uses: ./.github/actions/setup-node-project
         with:
@@ -118,8 +122,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - uses: ./.github/actions/setup-node-project
         with:
