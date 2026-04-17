@@ -3,10 +3,16 @@ name: ci-two-spaceships
 on:
   push:
     branches: [main]
-    paths: ['TwoSpaceships/**', '.github/**', '.gitmodules']
+    paths:
+      - 'TwoSpaceships/**'
+      - '.github/workflows/ci-two-spaceships.yml'
+      - '.github/actions/**'
   pull_request:
     branches: [main]
-    paths: ['TwoSpaceships/**', '.github/**', '.gitmodules']
+    paths:
+      - 'TwoSpaceships/**'
+      - '.github/workflows/ci-two-spaceships.yml'
+      - '.github/actions/**'
   workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
