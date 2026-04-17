@@ -1,0 +1,33 @@
+name: Sync Subtree Repo
+
+on:
+  push:
+
+jobs:
+  sync:
+    name: Push subtrees to satellites
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add satellite remotes
+        run: |
+          git remote add satellite-si https://x-access-token:${{ secrets.SATELLITE_TOKEN }}@github.com/jeuvideops/SpaceInvaders.git || true
+          git remote add satellite-ts https://x-access-token:${{ secrets.SATELLITE_TOKEN }}@github.com/jeuvideops/TwoSpaceships.git || true
+
+      - name: Sync SpaceInvaders
+        run: |
+          git subtree push --prefix=SpaceInvaders satellite-si ${{ github.ref_name }}
+
+      - name: Sync TwoSpaceships
+        run: |
+          git subtree push --prefix=TwoSpaceships satellite-ts ${{ github.ref_name }}
