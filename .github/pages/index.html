@@ -10,9 +10,6 @@
     <!-- ======================================================================= -->
     <script>
         const CONFIG = {
-            // URL de base de tes GitHub Pages
-            baseUrl: "https://github.com/jeuvideops/jeuvideops/",
-            
             games: {
                 "twospaceships": {
                     id: "twospaceships",
@@ -156,7 +153,7 @@
 
         <!-- Footer Sidebar -->
         <div class="p-4 border-t border-retro-sidebarBorder">
-            <a href="https://github.com/EpitechWebAcademiePromo2027/W-DOP-200-PAR-2-1-jeux_videops-17" target="_blank" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] text-sm font-medium text-gray-300 transition-colors border border-retro-sidebarBorder">
+            <a href="https://github.com/jeuvideops/jeuvideops" target="_blank" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] text-sm font-medium text-gray-300 transition-colors border border-retro-sidebarBorder">
                 <i class="fa-brands fa-github"></i>
                 Voir sur GitHub
             </a>
@@ -209,7 +206,7 @@
                 </div>
 
                 <!-- Iframe principale -->
-                <iframe id="main-iframe" class="w-full h-full border-none opacity-0 transition-opacity duration-300 bg-transparent" src="" allowfullscreen></iframe>
+                <iframe id="main-iframe" class="w-full h-full border-none opacity-0 transition-opacity duration-300 bg-transparent" src="about:blank" allowfullscreen></iframe>
             </div>
         </div>
         
@@ -230,6 +227,49 @@
         const loader = document.getElementById('loader');
         const emptyState = document.getElementById('empty-state');
         const openNewTabBtn = document.getElementById('open-new-tab-btn');
+        const emptyStateTitle = emptyState.querySelector('h3');
+        const emptyStateMessage = emptyState.querySelector('p');
+
+        let viewUpdateToken = 0;
+
+        function getSiteBaseUrl() {
+            return new URL('.', window.location.href).toString();
+        }
+
+        function buildUrl(targetUrl) {
+            return targetUrl.startsWith('http')
+                ? targetUrl
+                : new URL(targetUrl, getSiteBaseUrl()).toString();
+        }
+
+        function showEmptyState(title, message) {
+            emptyStateTitle.textContent = title;
+            emptyStateMessage.textContent = message;
+            emptyState.classList.remove('hidden');
+            mainIframe.classList.add('hidden');
+            loader.classList.add('hidden');
+            openNewTabBtn.classList.add('hidden');
+            openNewTabBtn.classList.remove('flex');
+            mainIframe.src = 'about:blank';
+        }
+
+        async function urlExists(url) {
+            try {
+                const headResponse = await fetch(url, {method: 'HEAD', cache: 'no-store'});
+                if (headResponse.ok) {
+                    return true;
+                }
+
+                if (headResponse.status !== 405) {
+                    return false;
+                }
+
+                const getResponse = await fetch(url, {method: 'GET', cache: 'no-store'});
+                return getResponse.ok;
+            } catch {
+                return false;
+            }
+        }
 
         function init() {
             renderNav();
@@ -309,7 +349,8 @@
         }
 
         // --- MISE À JOUR DE LA VUE PRINCIPALE ---
-        function updateView() {
+        async function updateView() {
+            const updateToken = ++viewUpdateToken;
             const game = CONFIG.games[state.currentGame];
             const tab = CONFIG.tabs.find(t => t.id === state.currentTab);
             
@@ -329,19 +370,29 @@
 
             // Gérer le cas où l'URL est vide
             if (!targetUrl || targetUrl === "") {
-                emptyState.classList.remove('hidden');
-                mainIframe.classList.add('hidden');
-                loader.classList.add('hidden');
-                openNewTabBtn.classList.add('hidden');
-                mainIframe.src = 'about:blank';
+                showEmptyState('Rapport non disponible', "L'URL pour cet onglet n'est pas encore configurée.");
             } else {
+                const finalUrl = buildUrl(targetUrl);
+                const parsedUrl = new URL(finalUrl);
+                const isSameOrigin = parsedUrl.origin === window.location.origin;
+                const isAvailable = !isSameOrigin || await urlExists(finalUrl);
+
+                if (updateToken !== viewUpdateToken) {
+                    return;
+                }
+
+                if (!isAvailable) {
+                    showEmptyState(
+                        'Rapport indisponible',
+                        `Aucun artefact disponible pour \"${tab.name}\" sur ${game.name}.`
+                    );
+                    return;
+                }
+
                 emptyState.classList.add('hidden');
                 mainIframe.classList.remove('hidden', 'opacity-100');
                 loader.classList.remove('hidden', 'opacity-0');
                 mainIframe.classList.add('opacity-0');
-                
-                // Concaténer la base URL si le lien n'est pas absolu
-                const finalUrl = targetUrl.startsWith('http') ? targetUrl : `${CONFIG.baseUrl}/${targetUrl}`;
                 
                 // Forcer l'animation de l'iframe
                 mainIframe.classList.remove('fade-in');

@@ -26,6 +26,7 @@ jobs:
   build-sites:
     name: "Build: Games from Source"
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
 
@@ -57,55 +58,11 @@ jobs:
           path: TwoSpaceships/dist/min/
           retention-days: 1
 
-  collect-reports:
-    name: "Collect: Latest CI Reports"
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Download latest SI + TS reports
-        run: |
-          set -euo pipefail
-          mkdir -p .reports
-
-          download_latest() {
-            local workflow_file="$1"
-            local artifact_name="$2"
-            local target_dir="$3"
-            local run_id
-            run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_file}/runs?branch=main&status=success&per_page=1" \
-              --jq '.workflow_runs[0].id // empty')
-            if [ -n "${run_id}" ]; then
-              gh run download "${run_id}" -n "${artifact_name}" -D "${target_dir}" -R "${GITHUB_REPOSITORY}" || echo "::warning::${artifact_name} not available"
-            else
-              echo "::warning::No successful CI run found for ${workflow_file}"
-            fi
-          }
-
-          # SI reports (artifacts live in deploy workflow runs, not CI — CI runs via workflow_call)
-          download_latest "deploy-space-invaders.yml" "spaceinvaders-allure-tests-report"  ".reports/SpaceInvaders/allure-report"
-          download_latest "deploy-space-invaders.yml" "spaceinvaders-playwright-report"    ".reports/SpaceInvaders/playwright-report"
-          download_latest "deploy-space-invaders.yml" "spaceinvaders-coverage"             ".reports/SpaceInvaders/coverage"
-          download_latest "deploy-space-invaders.yml" "spaceinvaders-npm-audit-report"     ".reports/SpaceInvaders"
-
-          # TS reports
-          download_latest "deploy-two-spaceships.yml" "twospaceships-allure-tests-report"  ".reports/TwoSpaceships/allure-report"
-          download_latest "deploy-two-spaceships.yml" "twospaceships-playwright-report"    ".reports/TwoSpaceships/playwright-report"
-          download_latest "deploy-two-spaceships.yml" "twospaceships-coverage"             ".reports/TwoSpaceships/coverage"
-          download_latest "deploy-two-spaceships.yml" "twospaceships-npm-audit-report"     ".reports/TwoSpaceships"
-
-      - name: Upload reports bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: central-reports
-          path: .reports/
-          if-no-files-found: ignore
-          retention-days: 1
-
   deploy-pages:
     name: "Deploy: GitHub Pages"
     runs-on: ubuntu-latest
-    needs: [build-sites, collect-reports]
+    needs: [build-sites]
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -116,42 +73,104 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: central-si-site
-          path: .artifacts/si-site
+          path: site/SpaceInvaders
 
       - name: Download TS site
         uses: actions/download-artifact@v4
         with:
           name: central-ts-site
-          path: .artifacts/ts-site
+          path: site/TwoSpaceships
 
-      - name: Download reports
-        uses: actions/download-artifact@v4
+      - name: Download SI Allure report (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
         with:
-          name: central-reports
-          path: .artifacts/reports
-        continue-on-error: true
+          github_token: ${{ github.token }}
+          workflow: deploy-space-invaders.yml
+          workflow_conclusion: success
+          branch: main
+          name: spaceinvaders-allure-tests-report
+          path: site/SpaceInvaders/allure-report
+          if_no_artifact_found: warn
 
-      - name: Assemble central site
-        run: |
-          set -euo pipefail
-          mkdir -p site/SpaceInvaders site/TwoSpaceships
+      - name: Download SI Playwright report (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-space-invaders.yml
+          workflow_conclusion: success
+          branch: main
+          name: spaceinvaders-playwright-report
+          path: site/SpaceInvaders/playwright-report
+          if_no_artifact_found: warn
 
-          cp ".github/pages/index.html" "site/index.html"
+      - name: Download SI coverage (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-space-invaders.yml
+          workflow_conclusion: success
+          branch: main
+          name: spaceinvaders-coverage
+          path: site/SpaceInvaders/coverage
+          if_no_artifact_found: warn
 
-          cp -R ".artifacts/si-site/." "site/SpaceInvaders/"
-          cp -R ".artifacts/ts-site/." "site/TwoSpaceships/"
+      - name: Download SI npm audit report (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-space-invaders.yml
+          workflow_conclusion: success
+          branch: main
+          name: spaceinvaders-npm-audit-report
+          path: site/SpaceInvaders
+          if_no_artifact_found: warn
 
-          # Reports SI
-          [ -d ".artifacts/reports/SpaceInvaders/allure-report" ]     && cp -R ".artifacts/reports/SpaceInvaders/allure-report"     "site/SpaceInvaders/" || true
-          [ -d ".artifacts/reports/SpaceInvaders/playwright-report" ] && cp -R ".artifacts/reports/SpaceInvaders/playwright-report" "site/SpaceInvaders/" || true
-          [ -d ".artifacts/reports/SpaceInvaders/coverage" ]          && cp -R ".artifacts/reports/SpaceInvaders/coverage"          "site/SpaceInvaders/" || true
-          [ -f ".artifacts/reports/SpaceInvaders/audit-report.html" ] && cp    ".artifacts/reports/SpaceInvaders/audit-report.html" "site/SpaceInvaders/" || true
+      - name: Download TS Allure report (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-two-spaceships.yml
+          workflow_conclusion: success
+          branch: main
+          name: twospaceships-allure-tests-report
+          path: site/TwoSpaceships/allure-report
+          if_no_artifact_found: warn
 
-          # Reports TS
-          [ -d ".artifacts/reports/TwoSpaceships/allure-report" ]     && cp -R ".artifacts/reports/TwoSpaceships/allure-report"     "site/TwoSpaceships/" || true
-          [ -d ".artifacts/reports/TwoSpaceships/playwright-report" ] && cp -R ".artifacts/reports/TwoSpaceships/playwright-report" "site/TwoSpaceships/" || true
-          [ -d ".artifacts/reports/TwoSpaceships/coverage" ]          && cp -R ".artifacts/reports/TwoSpaceships/coverage"          "site/TwoSpaceships/" || true
-          [ -f ".artifacts/reports/TwoSpaceships/audit-report.html" ] && cp    ".artifacts/reports/TwoSpaceships/audit-report.html" "site/TwoSpaceships/" || true
+      - name: Download TS Playwright report (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-two-spaceships.yml
+          workflow_conclusion: success
+          branch: main
+          name: twospaceships-playwright-report
+          path: site/TwoSpaceships/playwright-report
+          if_no_artifact_found: warn
+
+      - name: Download TS coverage (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-two-spaceships.yml
+          workflow_conclusion: success
+          branch: main
+          name: twospaceships-coverage
+          path: site/TwoSpaceships/coverage
+          if_no_artifact_found: warn
+
+      - name: Download TS npm audit report (latest successful deploy)
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: deploy-two-spaceships.yml
+          workflow_conclusion: success
+          branch: main
+          name: twospaceships-npm-audit-report
+          path: site/TwoSpaceships
+          if_no_artifact_found: warn
+
+      - name: Copy central dashboard index
+        run: cp ".github/pages/index.html" "site/index.html"
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
