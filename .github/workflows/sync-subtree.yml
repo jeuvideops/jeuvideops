@@ -20,6 +20,10 @@ jobs:
             repo: jeuvideops/SpaceInvaders
             path: SpaceInvaders
             deploy_key_secret: SI_DEPLOY_KEY
+          - name: TwoSpaceships
+            repo: jeuvideops/TwoSpaceships
+            path: TwoSpaceships
+            deploy_key_secret: TS_DEPLOY_KEY
 
     steps:
       - uses: actions/checkout@v4
