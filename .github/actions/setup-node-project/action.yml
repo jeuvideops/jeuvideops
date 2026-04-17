@@ -7,7 +7,7 @@ description: Checkout, setup Node, and install dependencies
 inputs:
   node-version:
     description: Node.js version
-    default: "20"
+    default: "24"
   working-directory:
     description: Project directory
     required: true
