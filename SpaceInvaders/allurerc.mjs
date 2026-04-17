@@ -1,13 +1,13 @@
 import {defineConfig} from 'allure';
 
 export default defineConfig({
-  name: 'TwoSpaceships Allure Reports',
+  name: 'SpaceInvaders Allure Reports',
   output: '.out/allure-report',
   plugins: {
     awesomeUnit: {
       import: '@allurereport/plugin-awesome',
       options: {
-        reportName: 'TwoSpaceships: Unit test',
+        reportName: 'SpaceInvaders: Unit test',
         singleFile: false,
         open: false,
         filter: ({labels}) => labels.find(({name, value}) => name === 'framework' && value === 'vitest'),
@@ -17,7 +17,7 @@ export default defineConfig({
     awesomeE2E: {
       import: '@allurereport/plugin-awesome',
       options: {
-        reportName: 'TwoSpaceships: E2E test',
+        reportName: 'SpaceInvaders: E2E test',
         singleFile: false,
         open: false,
         filter: ({labels}) => labels.find(({name, value}) => name === 'framework' && value === 'playwright'),

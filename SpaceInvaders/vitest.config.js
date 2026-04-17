@@ -3,7 +3,7 @@ import {configDefaults, defineConfig} from 'vitest/config';
 export default defineConfig({
   test: {
     setupFiles: ['allure-vitest/setup'],
-    include: ['test/unit/**/*.test.js'],
+    include: ['src/test/unit/**/*.test.ts'],
     exclude: [...configDefaults.exclude, 'test/e2e/**'],
     reporters: [
       'default',
