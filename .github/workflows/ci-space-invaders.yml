@@ -96,10 +96,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install build dependencies
+        run: apt-get update && apt-get install -y build-essential
+
       - uses: ./.github/actions/setup-node-project
         with:
           working-directory: ${{ env.WORK_DIR }}
-          node-version: '20'
 
       - name: Run E2E Tests
         id: e2e-tests
