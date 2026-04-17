@@ -1,117 +1,364 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>JeuVideOps Dashboard</title>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeux VideOPS - Dashboard CI/CD</title>
+    
+    <!-- ======================================================================= -->
+    <!-- 🛠️ CONFIGURATION DES LIENS ET VARIABLES (À MODIFIER ICI) 🛠️        -->
+    <!-- ======================================================================= -->
+    <script>
+        const CONFIG = {
+            // URL de base de tes GitHub Pages
+            baseUrl: "https://epitechwebacademiepromo2027.github.io/W-DOP-200-PAR-2-1-jeux_videops-17",
+            
+            games: {
+                "twospaceships": {
+                    id: "twospaceships",
+                    name: "Two Spaceships",
+                    icon: "fa-rocket",
+                    iconClass: "bg-retro-accentBg text-retro-accent",
+                    status: "Déployé",
+                    statusColor: "bg-emerald-500",
+                    
+                    // --- LIENS TWO SPACESHIPS ---
+                    gameUrl: "TwoSpaceships/",
+                    reports: {
+                        allure: "TwoSpaceships/allure-report/index.html",
+                        playwright: "TwoSpaceships/playwright-report/index.html",
+                        coverage: "TwoSpaceships/coverage/index.html",
+                        audit: "TwoSpaceships/audit-report.html"
+                    }
+                },
+                "spaceinvaders": {
+                    id: "spaceinvaders",
+                    name: "Space Invaders",
+                    icon: "fa-bolt",
+                    iconClass: "bg-[#222222] text-gray-400",
+                    status: "Déployé",
+                    statusColor: "bg-emerald-500",
+                    
+                    // --- LIENS SPACE INVADERS ---
+                    gameUrl: "SpaceInvaders/",
+                    reports: {
+                        allure: "SpaceInvaders/allure-report/index.html",
+                        playwright: "SpaceInvaders/playwright-report/index.html",
+                        coverage: "SpaceInvaders/coverage/index.html",
+                        audit: "SpaceInvaders/audit-report.html"
+                    }
+                }
+            },
+            
+            // Les onglets en haut de la page
+            tabs: [
+                { id: 'game', name: 'Jouer', icon: 'fa-gamepad' },
+                { id: 'allure', name: 'Allure Report', icon: 'fa-chart-pie' },
+                { id: 'playwright', name: 'Playwright E2E', icon: 'fa-masks-theater' },
+                { id: 'coverage', name: 'Coverage', icon: 'fa-shield-halved' },
+                { id: 'audit', name: 'NPM Audit', icon: 'fa-bug' }
+            ]
+        };
+
+        // État initial de l'application
+        let state = {
+            currentGame: 'twospaceships',
+            currentTab: 'game'
+        };
+    </script>
+    <!-- ======================================================================= -->
+    <!-- FIN DE LA CONFIGURATION                                                 -->
+    <!-- ======================================================================= -->
+
+    <!-- Tailwind CSS & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        retro: {
+                            sidebar: '#141414',
+                            sidebarBorder: '#222222',
+                            sidebarActive: '#1E1E1E',
+                            accent: '#DF6A36',     // Le orange Epitech/Retro
+                            accentBg: '#331F15',   // Le fond marron des icônes
+                            mainBg: '#FFFFFF',
+                            iframeBg: '#F3F4F6'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"Fira Code"', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-      :root {
-        --bg: #0b1320;
-        --bg-soft: #111a2b;
-        --panel: #15213a;
-        --text: #e6edf8;
-        --muted: #9eb0cc;
-        --accent: #4ea1ff;
-        --accent-2: #91d1ff;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Avenir Next", "Segoe UI", sans-serif;
-        background:
-          radial-gradient(1200px 700px at 80% -10%, rgba(78, 161, 255, 0.25), transparent 55%),
-          radial-gradient(900px 600px at -10% 90%, rgba(145, 209, 255, 0.15), transparent 60%),
-          linear-gradient(160deg, var(--bg), var(--bg-soft));
-        color: var(--text);
-      }
-
-      main {
-        width: min(960px, 92vw);
-        margin: 0 auto;
-        padding: 4rem 0 5rem;
-      }
-
-      h1 {
-        margin: 0 0 0.75rem;
-        font-size: clamp(1.8rem, 2.8vw, 3rem);
-        letter-spacing: 0.02em;
-      }
-
-      p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.55;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1rem;
-        margin-top: 2.2rem;
-      }
-
-      .card {
-        display: block;
-        padding: 1.25rem;
-        border: 1px solid rgba(158, 176, 204, 0.2);
-        border-radius: 14px;
-        text-decoration: none;
-        color: inherit;
-        background: linear-gradient(180deg, rgba(21, 33, 58, 0.95), rgba(15, 24, 42, 0.95));
-        transition: transform 160ms ease, border-color 160ms ease;
-      }
-
-      .card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(78, 161, 255, 0.55);
-      }
-
-      .card h2 {
-        margin: 0 0 0.55rem;
-        font-size: 1.1rem;
-      }
-
-      .chip {
-        display: inline-block;
-        margin-top: 0.85rem;
-        padding: 0.22rem 0.56rem;
-        border-radius: 999px;
-        font-size: 0.8rem;
-        color: var(--accent-2);
-        border: 1px solid rgba(145, 209, 255, 0.4);
-      }
-
-      footer {
-        margin-top: 2.2rem;
-        font-size: 0.88rem;
-        color: var(--muted);
-      }
+        /* Animation fluide pour l'iframe */
+        .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Scrollbar masquée pour un look épuré */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-  </head>
-  <body>
-    <main>
-      <h1>JeuVideOps</h1>
-      <p>
-        Central dashboard for game deployments. This template is temporary and can be replaced
-        with your final HTML anytime.
-      </p>
+</head>
+<body class="text-gray-800 h-screen flex overflow-hidden font-sans antialiased bg-retro-mainBg">
 
-      <section class="grid">
-        <a class="card" href="./twospaceships/">
-          <h2>TwoSpaceships</h2>
-          <p>Open the latest TwoSpaceships build published by the orchestrator workflow.</p>
-          <span class="chip">Live Build</span>
-        </a>
-      </section>
+    <!-- SIDEBAR -->
+    <aside class="w-[280px] bg-retro-sidebar border-r border-retro-sidebarBorder flex flex-col h-full shrink-0 z-20">
+        <!-- Logo / Titre -->
+        <div class="h-[72px] flex flex-col justify-center px-6 border-b border-retro-sidebarBorder">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-retro-accentBg flex items-center justify-center border border-retro-accent/20">
+                    <i class="fa-solid fa-code-branch text-retro-accent text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-[15px] leading-tight">Jeux VideOPS</h1>
+                    <p class="text-[10px] text-retro-accent font-mono tracking-widest mt-0.5">W-DOP-200</p>
+                </div>
+            </div>
+        </div>
 
-      <footer>
-        Add more cards later (for example SpaceInvaders) by publishing a site-&lt;name&gt; artifact.
-      </footer>
+        <!-- Contenu de la sidebar -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-8 no-scrollbar">
+            
+            <!-- Section Projets -->
+            <div>
+                <h2 class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest mb-3 px-2">Projets CI/CD</h2>
+                <nav class="space-y-1.5" id="game-nav-container">
+                    <!-- Généré dynamiquement en JS -->
+                </nav>
+            </div>
+
+            <!-- Section Équipe -->
+            <div>
+                <h2 class="text-[11px] font-semibold text-gray-500 uppercase tracking-widest mb-3 px-2">L'équipe</h2>
+                <div class="px-2 space-y-3.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-[26px] h-[26px] rounded bg-retro-accentBg flex items-center justify-center text-[11px] font-bold text-retro-accent border border-retro-accent/20">S</div>
+                        <span class="text-[13px] font-medium text-gray-100">Sofian <span class="text-xs text-gray-500 font-normal ml-1">DevOps</span></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-[26px] h-[26px] rounded bg-retro-accentBg flex items-center justify-center text-[11px] font-bold text-retro-accent border border-retro-accent/20">P</div>
+                        <span class="text-[13px] font-medium text-gray-100">Partenaire <span class="text-xs text-gray-500 font-normal ml-1">DevOps</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Sidebar -->
+        <div class="p-4 border-t border-retro-sidebarBorder">
+            <a href="https://github.com/EpitechWebAcademiePromo2027/W-DOP-200-PAR-2-1-jeux_videops-17" target="_blank" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] text-sm font-medium text-gray-300 transition-colors border border-retro-sidebarBorder">
+                <i class="fa-brands fa-github"></i>
+                Voir sur GitHub
+            </a>
+        </div>
+    </aside>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-full relative">
+        
+        <!-- Top Bar (Onglets) -->
+        <header class="h-[60px] border-b border-gray-200 bg-white flex items-end px-8 shrink-0">
+            <div class="flex gap-2 h-full" id="tabs-container">
+                <!-- Généré dynamiquement en JS -->
+            </div>
+        </header>
+
+        <!-- Zone de contenu -->
+        <div class="flex-1 p-8 overflow-hidden flex flex-col bg-white">
+            
+            <!-- En-tête de la page -->
+            <div class="flex justify-between items-start mb-5 shrink-0">
+                <div>
+                    <h2 id="view-title" class="text-[22px] font-bold text-black flex items-center">
+                        <!-- Rempli par JS -->
+                    </h2>
+                    <p id="view-subtitle" class="text-gray-400 text-[13px] mt-1.5 font-mono">
+                        <!-- Rempli par JS -->
+                    </p>
+                </div>
+                
+                <a id="open-new-tab-btn" href="#" target="_blank" class="hidden items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-medium rounded-lg border border-gray-200 shadow-sm transition-colors">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-gray-400"></i>
+                    Ouvrir le rapport
+                </a>
+            </div>
+
+            <!-- Conteneur Iframe -->
+            <div class="flex-1 w-full bg-retro-iframeBg border border-gray-200 rounded-2xl overflow-hidden relative flex items-center justify-center">
+                
+                <!-- Loader -->
+                <div id="loader" class="absolute inset-0 bg-retro-iframeBg flex flex-col items-center justify-center z-10 transition-opacity duration-300">
+                    <div class="w-8 h-8 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin mb-3"></div>
+                </div>
+
+                <!-- État vide -->
+                <div id="empty-state" class="absolute inset-0 bg-retro-iframeBg flex flex-col items-center justify-center z-20 hidden">
+                    <i class="fa-regular fa-folder-open text-4xl text-gray-300 mb-3"></i>
+                    <h3 class="text-lg font-semibold text-gray-600">Rapport non disponible</h3>
+                    <p class="text-gray-400 text-sm mt-1">L'URL pour cet onglet n'est pas encore configurée.</p>
+                </div>
+
+                <!-- Iframe principale -->
+                <iframe id="main-iframe" class="w-full h-full border-none opacity-0 transition-opacity duration-300 bg-transparent" src="" allowfullscreen></iframe>
+            </div>
+        </div>
+        
+        <!-- Bouton Aide -->
+        <div class="absolute bottom-6 right-6 w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white cursor-pointer shadow-lg hover:bg-gray-800 transition-colors">
+            <i class="fa-solid fa-question text-sm"></i>
+        </div>
     </main>
-  </body>
+
+    <!-- LOGIQUE JAVASCRIPT -->
+    <script>
+        // DOM Elements
+        const navContainer = document.getElementById('game-nav-container');
+        const tabsContainer = document.getElementById('tabs-container');
+        const viewTitle = document.getElementById('view-title');
+        const viewSubtitle = document.getElementById('view-subtitle');
+        const mainIframe = document.getElementById('main-iframe');
+        const loader = document.getElementById('loader');
+        const emptyState = document.getElementById('empty-state');
+        const openNewTabBtn = document.getElementById('open-new-tab-btn');
+
+        function init() {
+            renderNav();
+            renderTabs();
+            updateView();
+
+            // Gestion de la fin du chargement de l'iframe
+            mainIframe.addEventListener('load', () => {
+                if (mainIframe.src && mainIframe.src !== window.location.href && mainIframe.src !== 'about:blank') {
+                    loader.classList.add('opacity-0');
+                    setTimeout(() => {
+                        loader.classList.add('hidden');
+                        mainIframe.classList.add('opacity-100');
+                    }, 300);
+                }
+            });
+        }
+
+        // --- RENDU SIDEBAR ---
+        function renderNav() {
+            navContainer.innerHTML = '';
+            Object.values(CONFIG.games).forEach(game => {
+                const isActive = state.currentGame === game.id;
+                
+                const btn = document.createElement('button');
+                btn.className = `w-full flex items-center justify-between p-2.5 rounded-lg transition-all duration-200 border ${
+                    isActive 
+                    ? 'bg-retro-sidebarActive border-[#333333]' 
+                    : 'bg-transparent border-transparent hover:bg-[#1A1A1A]'
+                }`;
+                btn.onclick = () => {
+                    state.currentGame = game.id;
+                    renderNav(); 
+                    updateView();
+                };
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded flex items-center justify-center text-[13px] ${game.iconClass}">
+                            <i class="fa-solid ${game.icon}"></i>
+                        </div>
+                        <span class="font-bold text-[13px] ${isActive ? 'text-white' : 'text-gray-400'}">${game.name}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-gray-500">${game.status}</span>
+                        <div class="w-1.5 h-1.5 rounded-full ${game.statusColor}"></div>
+                    </div>
+                `;
+                navContainer.appendChild(btn);
+            });
+        }
+
+        // --- RENDU ONGLETS ---
+        function renderTabs() {
+            tabsContainer.innerHTML = '';
+            CONFIG.tabs.forEach(tab => {
+                const isActive = state.currentTab === tab.id;
+                
+                const btn = document.createElement('button');
+                btn.className = `h-full flex items-center gap-2 text-[13px] font-semibold border-b-2 transition-all px-5 ${
+                    isActive 
+                    ? `border-retro-accent text-retro-accent bg-orange-50/50` 
+                    : `border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50/50`
+                }`;
+                btn.onclick = () => {
+                    state.currentTab = tab.id;
+                    renderTabs(); 
+                    updateView();
+                };
+
+                btn.innerHTML = `
+                    <i class="fa-solid ${tab.icon} ${isActive ? 'text-retro-accent' : 'text-gray-300'}"></i>
+                    ${tab.name}
+                `;
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        // --- MISE À JOUR DE LA VUE PRINCIPALE ---
+        function updateView() {
+            const game = CONFIG.games[state.currentGame];
+            const tab = CONFIG.tabs.find(t => t.id === state.currentTab);
+            
+            // Format du titre : "Two Spaceships / Jouer"
+            viewTitle.innerHTML = `${game.name} <span class="text-gray-300 font-normal mx-2">/</span> <span class="text-gray-500 font-medium">${tab.name}</span>`;
+            
+            let targetUrl = '';
+            if (state.currentTab === 'game') {
+                targetUrl = game.gameUrl;
+                viewSubtitle.textContent = "Test du déploiement (Environnement de Production)";
+                mainIframe.classList.remove('bg-white');
+            } else {
+                targetUrl = game.reports[state.currentTab];
+                viewSubtitle.textContent = `Artefact généré par la CI/CD - ${tab.name}`;
+                mainIframe.classList.add('bg-white');
+            }
+
+            // Gérer le cas où l'URL est vide
+            if (!targetUrl || targetUrl === "") {
+                emptyState.classList.remove('hidden');
+                mainIframe.classList.add('hidden');
+                loader.classList.add('hidden');
+                openNewTabBtn.classList.add('hidden');
+                mainIframe.src = 'about:blank';
+            } else {
+                emptyState.classList.add('hidden');
+                mainIframe.classList.remove('hidden', 'opacity-100');
+                loader.classList.remove('hidden', 'opacity-0');
+                mainIframe.classList.add('opacity-0');
+                
+                // Concaténer la base URL si le lien n'est pas absolu
+                const finalUrl = targetUrl.startsWith('http') ? targetUrl : `${CONFIG.baseUrl}/${targetUrl}`;
+                
+                // Forcer l'animation de l'iframe
+                mainIframe.classList.remove('fade-in');
+                void mainIframe.offsetWidth; 
+                mainIframe.classList.add('fade-in');
+                
+                mainIframe.src = finalUrl;
+
+                // Mettre à jour le bouton
+                openNewTabBtn.href = finalUrl;
+                openNewTabBtn.classList.remove('hidden');
+                openNewTabBtn.classList.add('flex');
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
 </html>
