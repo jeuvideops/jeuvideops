@@ -27,9 +27,7 @@ jobs:
     name: Build TwoSpaceships Artifact
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-node-project
         with:
@@ -50,9 +48,7 @@ jobs:
     name: Build & Push to ghcr.io
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v6
 
       - name: Docker metadata
         id: meta
@@ -90,9 +86,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v6
 
       - name: Docker metadata
         id: meta
