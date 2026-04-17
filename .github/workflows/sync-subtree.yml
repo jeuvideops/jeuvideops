@@ -2,16 +2,13 @@ name: Sync Satellites
 
 on:
   push:
-    branches:
-      - main
-      - 'dev/**'
-      - 'feature/**'
-      - 'fix/**'
+  delete:
 
 jobs:
   sync:
     name: Sync ${{ matrix.satellite.name }}
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -37,3 +34,33 @@ jobs:
           deploy_key: ${{ secrets[matrix.satellite.deploy_key_secret] }}
           branch: ${{ github.ref_name }}
           force: true
+
+  cleanup:
+    name: Cleanup ${{ matrix.satellite.name }}
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    strategy:
+      fail-fast: false
+      matrix:
+        satellite:
+          - name: SpaceInvaders
+            repo: jeuvideops/SpaceInvaders
+            deploy_key_secret: SI_DEPLOY_KEY
+          - name: TwoSpaceships
+            repo: jeuvideops/TwoSpaceships
+            deploy_key_secret: TS_DEPLOY_KEY
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets[matrix.satellite.deploy_key_secret] }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Delete branch in ${{ matrix.satellite.name }}
+        run: >
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/deploy_key"
+          git push git@github.com:${{ matrix.satellite.repo }}.git
+          --delete ${{ github.event.ref }}
+        continue-on-error: true
