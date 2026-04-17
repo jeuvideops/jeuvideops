@@ -1,4 +1,4 @@
-name: deploy-two-spaceships
+name: Build and Deploy
 
 on:
   push:
