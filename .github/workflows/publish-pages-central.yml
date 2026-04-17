@@ -99,6 +99,7 @@ jobs:
         with:
           name: central-reports
           path: .reports/
+          if-no-files-found: ignore
           retention-days: 1
 
   deploy-pages:
@@ -128,6 +129,7 @@ jobs:
         with:
           name: central-reports
           path: .artifacts/reports
+        continue-on-error: true
 
       - name: Assemble central site
         run: |
