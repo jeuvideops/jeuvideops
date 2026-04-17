@@ -2,39 +2,34 @@ name: Sync Satellites
 
 on:
   push:
-#    branches:
-#      - main
-#      - 'dev/**'
-#      - 'feature/**'
-#      - 'fix/**'
+    branches:
+      - main
+      - 'dev/**'
+      - 'feature/**'
+      - 'fix/**'
 
 jobs:
   sync:
-    name: Push subtrees to satellites
+    name: Sync ${{ matrix.satellite.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        satellite:
+          - name: SpaceInvaders
+            repo: jeuvideops/SpaceInvaders
+            path: SpaceInvaders
+            deploy_key_secret: SI_DEPLOY_KEY
 
     steps:
-      - name: Checkout (full history)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Add satellite remotes
-        env:
-          TOKEN: ${{ secrets.SATELLITE_TOKEN }}
-        run: |
-          git remote add satellite-si "https://${TOKEN}@github.com/jeuvideops/SpaceInvaders.git" || \
-            git remote set-url satellite-si "https://${TOKEN}@github.com/jeuvideops/SpaceInvaders.git"
-          git remote add satellite-ts "https://${TOKEN}@github.com/jeuvideops/TwoSpaceships.git" || \
-            git remote set-url satellite-ts "https://${TOKEN}@github.com/jeuvideops/TwoSpaceships.git"
-
-      - name: Sync SpaceInvaders
-        run: git subtree push --prefix=SpaceInvaders satellite-si ${{ github.ref_name }}
-
-      - name: Sync TwoSpaceships
-        run: git subtree push --prefix=TwoSpaceships satellite-ts ${{ github.ref_name }}
+      - uses: NxtLvLSoftware/git-subtree-action@1.1
+        with:
+          repo: ${{ matrix.satellite.repo }}
+          path: ${{ matrix.satellite.path }}
+          deploy_key: ${{ secrets[matrix.satellite.deploy_key_secret] }}
+          branch: ${{ github.ref_name }}
+          force: true
