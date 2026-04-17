@@ -15,6 +15,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
 
 env:
   WORK_DIR: TwoSpaceships

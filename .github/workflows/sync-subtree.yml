@@ -1,4 +1,4 @@
-name: Sync Satellites
+name: "[Central] Sync Satellites"
 
 on:
   push:
