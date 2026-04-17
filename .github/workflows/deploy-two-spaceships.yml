@@ -1,0 +1,180 @@
+name: "[TS] Build & Deploy"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'TwoSpaceships/**'
+      - '.github/workflows/deploy-two-spaceships.yml'
+      - '.github/actions/setup-node-project/**'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-two-spaceships
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WORK_DIR: TwoSpaceships
+
+jobs:
+  # ─── Stage 1: CI ────────────────────────────────────────────────────────────
+
+  ci:
+    name: "CI Suite"
+    uses: ./.github/workflows/ci-two-spaceships.yml
+    secrets: inherit
+
+  # ─── Stage 2: Build ─────────────────────────────────────────────────────────
+
+  build:
+    name: "Build: Static Artifact"
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ env.WORK_DIR }}
+
+      - name: Build game
+        working-directory: ${{ env.WORK_DIR }}
+        run: npx gulp build
+
+      - name: Upload static artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ts-site
+          path: ${{ env.WORK_DIR }}/dist/min/
+          retention-days: 7
+
+  # ─── Stage 3: Release (Staging) ──────────────────────────────────────────────
+
+  release-staging-ghcr:
+    name: "Release: Docker Staging (GHCR)"
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/twospaceships
+          tags: |
+            type=raw,value=staging-${{ github.sha }}
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── Stage 4: Deploy (Production) ───────────────────────────────────────────
+
+  deploy-production-ghcr:
+    name: "Deploy: Production (GHCR)"
+    runs-on: ubuntu-latest
+    needs: release-staging-ghcr
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    environment:
+      name: production
+      url: https://ghcr.io/${{ github.repository_owner }}/twospaceships
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/twospaceships
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-production-dockerhub:
+    name: "Deploy: Production (Docker Hub)"
+    runs-on: ubuntu-latest
+    needs: release-staging-ghcr
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://hub.docker.com/r/${{ vars.DOCKERHUB_USERNAME }}/twospaceships
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/${{ vars.DOCKERHUB_USERNAME }}/twospaceships
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: ${{ env.WORK_DIR }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

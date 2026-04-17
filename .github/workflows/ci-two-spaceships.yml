@@ -1,7 +1,10 @@
-name: ci-two-spaceships
+name: "[TS] CI"
 
 on:
+  workflow_call:
+  workflow_dispatch:
   push:
+    branches-ignore: [main]
     paths:
       - 'TwoSpaceships/**'
       - '.github/workflows/ci-two-spaceships.yml'
@@ -12,7 +15,6 @@ on:
       - 'TwoSpaceships/**'
       - '.github/workflows/ci-two-spaceships.yml'
       - '.github/actions/**'
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,14 +22,13 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   WORK_DIR: TwoSpaceships
 
 jobs:
   lint:
-    name: Lint
+    name: "Source: Lint"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -41,9 +42,12 @@ jobs:
         run: npm run lint:gha
 
   unit-test:
-    name: Unit Tests
+    name: "Build: Unit Tests"
     runs-on: ubuntu-latest
     needs: lint
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
 
@@ -74,7 +78,7 @@ jobs:
           retention-days: 7
 
       - name: Vitest Coverage Report
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ${{ env.WORK_DIR }}
@@ -88,7 +92,7 @@ jobs:
         run: exit 1
 
   e2e-test:
-    name: E2E Tests
+    name: "Test: E2E Tests"
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
@@ -135,9 +139,9 @@ jobs:
         run: exit 1
 
   generate-test-report:
-    name: Allure - E2E & Unit Report
+    name: "Test: Allure Report"
     runs-on: ubuntu-latest
-    needs: [ 'unit-test','e2e-test' ]
+    needs: ['unit-test','e2e-test']
     if: always()
     steps:
       - uses: actions/checkout@v6
@@ -166,7 +170,7 @@ jobs:
           retention-days: 7
 
   audit:
-    name: Audit
+    name: "Test: Security Audit"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -198,10 +202,13 @@ jobs:
         run: exit 1
 
   PR-report:
-    name: PR Summary
+    name: "PR Summary"
     runs-on: ubuntu-latest
-    needs: [ lint, unit-test, e2e-test, audit ]
+    needs: [lint, unit-test, e2e-test, audit]
     if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: marocchino/sticky-pull-request-comment@v2
         with:
