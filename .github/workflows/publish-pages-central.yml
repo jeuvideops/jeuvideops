@@ -1,0 +1,161 @@
+name: "[Central] Publish Pages"
+
+on:
+  workflow_run:
+    workflows: ["[SI] Build & Deploy", "[TS] Build & Deploy"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/pages/**'
+      - '.github/workflows/publish-pages-central.yml'
+
+concurrency:
+  group: publish-pages-central
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-sites:
+    name: "Build: Games from Source"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: SpaceInvaders
+      - name: Build SpaceInvaders
+        working-directory: SpaceInvaders
+        run: npm run build
+
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: TwoSpaceships
+      - name: Build TwoSpaceships
+        working-directory: TwoSpaceships
+        run: npx gulp build
+
+      - name: Upload SI site
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-si-site
+          path: SpaceInvaders/build/
+          retention-days: 1
+
+      - name: Upload TS site
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-ts-site
+          path: TwoSpaceships/dist/min/
+          retention-days: 1
+
+  collect-reports:
+    name: "Collect: Latest CI Reports"
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download latest SI + TS reports
+        run: |
+          set -euo pipefail
+          mkdir -p .reports
+
+          download_latest() {
+            local workflow_file="$1"
+            local artifact_name="$2"
+            local target_dir="$3"
+            local run_id
+            run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_file}/runs?branch=main&status=success&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')
+            if [ -n "${run_id}" ]; then
+              gh run download "${run_id}" -n "${artifact_name}" -D "${target_dir}" -R "${GITHUB_REPOSITORY}" || echo "::warning::${artifact_name} not available"
+            else
+              echo "::warning::No successful CI run found for ${workflow_file}"
+            fi
+          }
+
+          # SI reports
+          download_latest "ci-space-invaders.yml" "spaceinvaders-allure-tests-report"  ".reports/SpaceInvaders/allure-report"
+          download_latest "ci-space-invaders.yml" "spaceinvaders-playwright-report"    ".reports/SpaceInvaders/playwright-report"
+          download_latest "ci-space-invaders.yml" "spaceinvaders-coverage"             ".reports/SpaceInvaders/coverage"
+          download_latest "ci-space-invaders.yml" "spaceinvaders-npm-audit-report"     ".reports/SpaceInvaders"
+
+          # TS reports
+          download_latest "ci-two-spaceships.yml" "twospaceships-allure-tests-report"  ".reports/TwoSpaceships/allure-report"
+          download_latest "ci-two-spaceships.yml" "twospaceships-playwright-report"    ".reports/TwoSpaceships/playwright-report"
+          download_latest "ci-two-spaceships.yml" "twospaceships-coverage"             ".reports/TwoSpaceships/coverage"
+          download_latest "ci-two-spaceships.yml" "twospaceships-npm-audit-report"     ".reports/TwoSpaceships"
+
+      - name: Upload reports bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-reports
+          path: .reports/
+          retention-days: 1
+
+  deploy-pages:
+    name: "Deploy: GitHub Pages"
+    runs-on: ubuntu-latest
+    needs: [build-sites, collect-reports]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download SI site
+        uses: actions/download-artifact@v4
+        with:
+          name: central-si-site
+          path: .artifacts/si-site
+
+      - name: Download TS site
+        uses: actions/download-artifact@v4
+        with:
+          name: central-ts-site
+          path: .artifacts/ts-site
+
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          name: central-reports
+          path: .artifacts/reports
+
+      - name: Assemble central site
+        run: |
+          set -euo pipefail
+          mkdir -p site/SpaceInvaders site/TwoSpaceships
+
+          cp ".github/pages/index.html" "site/index.html"
+
+          cp -R ".artifacts/si-site/." "site/SpaceInvaders/"
+          cp -R ".artifacts/ts-site/." "site/TwoSpaceships/"
+
+          # Reports SI
+          [ -d ".artifacts/reports/SpaceInvaders/allure-report" ]     && cp -R ".artifacts/reports/SpaceInvaders/allure-report"     "site/SpaceInvaders/" || true
+          [ -d ".artifacts/reports/SpaceInvaders/playwright-report" ] && cp -R ".artifacts/reports/SpaceInvaders/playwright-report" "site/SpaceInvaders/" || true
+          [ -d ".artifacts/reports/SpaceInvaders/coverage" ]          && cp -R ".artifacts/reports/SpaceInvaders/coverage"          "site/SpaceInvaders/" || true
+          [ -f ".artifacts/reports/SpaceInvaders/audit-report.html" ] && cp    ".artifacts/reports/SpaceInvaders/audit-report.html" "site/SpaceInvaders/" || true
+
+          # Reports TS
+          [ -d ".artifacts/reports/TwoSpaceships/allure-report" ]     && cp -R ".artifacts/reports/TwoSpaceships/allure-report"     "site/TwoSpaceships/" || true
+          [ -d ".artifacts/reports/TwoSpaceships/playwright-report" ] && cp -R ".artifacts/reports/TwoSpaceships/playwright-report" "site/TwoSpaceships/" || true
+          [ -d ".artifacts/reports/TwoSpaceships/coverage" ]          && cp -R ".artifacts/reports/TwoSpaceships/coverage"          "site/TwoSpaceships/" || true
+          [ -f ".artifacts/reports/TwoSpaceships/audit-report.html" ] && cp    ".artifacts/reports/TwoSpaceships/audit-report.html" "site/TwoSpaceships/" || true
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

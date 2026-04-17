@@ -1,30 +1,30 @@
-name: "[SI] Build & Deploy"
+name: "[TS] Build & Deploy"
 
 on:
   push:
     branches: [main]
     paths:
-      - 'SpaceInvaders/**'
-      - '.github/workflows/deploy-space-invaders.yml'
+      - 'TwoSpaceships/**'
+      - '.github/workflows/deploy-two-spaceships.yml'
       - '.github/actions/setup-node-project/**'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-space-invaders
+  group: deploy-two-spaceships
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 env:
-  WORK_DIR: SpaceInvaders
+  WORK_DIR: TwoSpaceships
 
 jobs:
   # ─── Stage 1: CI ────────────────────────────────────────────────────────────
 
   ci:
     name: "CI Suite"
-    uses: ./.github/workflows/ci-space-invaders.yml
+    uses: ./.github/workflows/ci-two-spaceships.yml
     secrets: inherit
 
   # ─── Stage 2: Build ─────────────────────────────────────────────────────────
@@ -42,13 +42,13 @@ jobs:
 
       - name: Build game
         working-directory: ${{ env.WORK_DIR }}
-        run: npm run build
+        run: npx gulp build
 
       - name: Upload static artifact
         uses: actions/upload-artifact@v4
         with:
-          name: si-site
-          path: ${{ env.WORK_DIR }}/build/
+          name: ts-site
+          path: ${{ env.WORK_DIR }}/dist/min/
           retention-days: 7
 
   # ─── Stage 3: Release (Staging) ──────────────────────────────────────────────
@@ -67,7 +67,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/spaceinvaders
+          images: ghcr.io/${{ github.repository_owner }}/twospaceships
           tags: |
             type=raw,value=staging-${{ github.sha }}
             type=sha,prefix=sha-,format=short
@@ -105,7 +105,7 @@ jobs:
       packages: write
     environment:
       name: production
-      url: https://ghcr.io/${{ github.repository_owner }}/spaceinvaders
+      url: https://ghcr.io/${{ github.repository_owner }}/twospaceships
     steps:
       - uses: actions/checkout@v6
 
@@ -113,7 +113,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/spaceinvaders
+          images: ghcr.io/${{ github.repository_owner }}/twospaceships
           tags: |
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
@@ -146,7 +146,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://hub.docker.com/r/${{ vars.DOCKERHUB_USERNAME }}/spaceinvaders
+      url: https://hub.docker.com/r/${{ vars.DOCKERHUB_USERNAME }}/twospaceships
     steps:
       - uses: actions/checkout@v6
 
@@ -154,7 +154,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: docker.io/${{ vars.DOCKERHUB_USERNAME }}/spaceinvaders
+          images: docker.io/${{ vars.DOCKERHUB_USERNAME }}/twospaceships
           tags: |
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
