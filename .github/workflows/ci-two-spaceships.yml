@@ -2,7 +2,6 @@ name: ci-two-spaceships
 
 on:
   push:
-    branches: [main]
     paths:
       - 'TwoSpaceships/**'
       - '.github/workflows/ci-two-spaceships.yml'
@@ -14,6 +13,7 @@ on:
       - '.github/workflows/ci-two-spaceships.yml'
       - '.github/actions/**'
   workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
