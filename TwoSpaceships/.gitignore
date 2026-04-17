@@ -1,0 +1,6 @@
+node_modules
+.DS_Store
+dist
+.out
+/.out/audit-report.html
+/audit.json
