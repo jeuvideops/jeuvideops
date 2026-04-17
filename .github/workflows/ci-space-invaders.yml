@@ -1,8 +1,10 @@
 name: ci-space-invaders
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
+    branches-ignore: [main]
     paths:
       - 'SpaceInvaders/**'
       - '.github/workflows/ci-space-invaders.yml'
@@ -20,7 +22,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   WORK_DIR: SpaceInvaders
@@ -30,7 +31,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-node-project
         with:
@@ -44,6 +45,9 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: lint
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
 
@@ -74,7 +78,7 @@ jobs:
           retention-days: 7
 
       - name: Vitest Coverage Report
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ${{ env.WORK_DIR }}
@@ -205,6 +209,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, unit-test, e2e-test, audit]
     if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: marocchino/sticky-pull-request-comment@v2
         with:
