@@ -1,7 +1,12 @@
-name: Sync Subtree Repo
+name: Sync Satellites
 
 on:
   push:
+#    branches:
+#      - main
+#      - 'dev/**'
+#      - 'feature/**'
+#      - 'fix/**'
 
 jobs:
   sync:
@@ -20,14 +25,16 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Add satellite remotes
+        env:
+          TOKEN: ${{ secrets.SATELLITE_TOKEN }}
         run: |
-          git remote add satellite-si https://x-access-token:${{ secrets.SATELLITE_TOKEN }}@github.com/jeuvideops/SpaceInvaders.git || true
-          git remote add satellite-ts https://x-access-token:${{ secrets.SATELLITE_TOKEN }}@github.com/jeuvideops/TwoSpaceships.git || true
+          git remote add satellite-si "https://${TOKEN}@github.com/jeuvideops/SpaceInvaders.git" || \
+            git remote set-url satellite-si "https://${TOKEN}@github.com/jeuvideops/SpaceInvaders.git"
+          git remote add satellite-ts "https://${TOKEN}@github.com/jeuvideops/TwoSpaceships.git" || \
+            git remote set-url satellite-ts "https://${TOKEN}@github.com/jeuvideops/TwoSpaceships.git"
 
       - name: Sync SpaceInvaders
-        run: |
-          git subtree push --prefix=SpaceInvaders satellite-si ${{ github.ref_name }}
+        run: git subtree push --prefix=SpaceInvaders satellite-si ${{ github.ref_name }}
 
       - name: Sync TwoSpaceships
-        run: |
-          git subtree push --prefix=TwoSpaceships satellite-ts ${{ github.ref_name }}
+        run: git subtree push --prefix=TwoSpaceships satellite-ts ${{ github.ref_name }}
