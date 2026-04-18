@@ -186,6 +186,9 @@ jobs:
         id: audit
         continue-on-error: true
         uses: ./.github/actions/npm-audit-summary
+        with:
+          game-name: SpaceInvaders
+          work-dir: ${{ env.WORK_DIR }}
 
       - name: Generate HTML report
         if: always()

@@ -2,9 +2,20 @@ name: npm audit summary
 author: sofian-bll
 description: Run npm audit and write a step summary
 
+inputs:
+  game-name:
+    description: Display name of the game (shown in the summary header)
+    required: true
+  work-dir:
+    description: Project directory
+    required: true
+
 runs:
   using: composite
   steps:
     - name: Run audit script
       shell: bash
+      env:
+        GAME_NAME: ${{ inputs.game-name }}
+        WORK_DIR: ${{ inputs.work-dir }}
       run: ${{ github.action_path }}/audit.sh

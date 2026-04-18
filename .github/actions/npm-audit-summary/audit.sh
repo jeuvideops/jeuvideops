@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+: "${GAME_NAME:?GAME_NAME env var must be set}"
+: "${WORK_DIR:?WORK_DIR env var must be set}"
+
 cd "$WORK_DIR"
-set -euo pipefail # Convention Bash : Script sûr
 
 npm audit --audit-level=high --omit=dev --json 2>/dev/null > audit.json || true
 
@@ -22,7 +26,7 @@ if [ "$MODERATE" -gt 0 ]; then
 fi
 
 cat <<EOF >> "$GITHUB_STEP_SUMMARY"
-NPM Audit Summary for TwoSpaceships
+NPM Audit Summary for ${GAME_NAME}
 ---
 
 |    Severity     |       Count        |
