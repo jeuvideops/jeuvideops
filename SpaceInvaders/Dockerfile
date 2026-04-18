@@ -1,12 +1,14 @@
 # Stage 1: Build
-FROM node:24-alpine AS builder
+# Parcel 1 pulls legacy native deps (e.g. deasync); Debian-based Node LTS is more reliable here.
+FROM node:24-bookworm-slim AS builder
+RUN apt-get update && apt-get install -y python3 make g++
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 COPY . .
-RUN npm run build --ignore-scripts
+RUN npm run build
 
 # Stage 2: Serve
 FROM nginx:alpine
