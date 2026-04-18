@@ -1,0 +1,202 @@
+name: _CI (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      game-name:
+        description: Display name of the game (e.g. "SpaceInvaders")
+        required: true
+        type: string
+      work-dir:
+        description: Project directory (e.g. "SpaceInvaders")
+        required: true
+        type: string
+      artifact-prefix:
+        description: Prefix for uploaded artifact names (e.g. "spaceinvaders")
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: "Source: Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ inputs.work-dir }}
+      - name: Run ESLint
+        working-directory: ${{ inputs.work-dir }}
+        run: npm run lint:gha
+
+  unit-test:
+    name: "Build: Unit Tests"
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ inputs.work-dir }}
+      - name: Run Unit Tests
+        id: unit-tests
+        working-directory: ${{ inputs.work-dir }}
+        run: npm run test:unit
+        continue-on-error: true
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-allure-results-unit
+          path: ${{ inputs.work-dir }}/.out/allure-results/
+          retention-days: 14
+      - name: Upload Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-coverage
+          path: ${{ inputs.work-dir }}/.out/coverage/
+          retention-days: 7
+      - name: Vitest Coverage Report
+        if: always() && github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ${{ inputs.work-dir }}
+          json-summary-path: .out/coverage/coverage-summary.json
+          json-final-path: .out/coverage/coverage-final.json
+          threshold-icons: '{"0": "🔴", "80": "🟠", "90": "🟢"}'
+          file-coverage-mode: all
+      - name: Fail job if unit tests failed
+        if: steps.unit-tests.outcome == 'failure'
+        run: exit 1
+
+  e2e-test:
+    name: "Test: E2E Tests"
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    needs: lint
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build dependencies
+        run: apt-get update && apt-get install -y build-essential
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ inputs.work-dir }}
+      - name: Run E2E Tests
+        id: e2e-tests
+        working-directory: ${{ inputs.work-dir }}
+        run: npm run test:e2e
+        continue-on-error: true
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-allure-results-e2e
+          path: ${{ inputs.work-dir }}/.out/allure-results/
+          retention-days: 14
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-playwright-report
+          path: ${{ inputs.work-dir }}/.out/e2e-report/
+          retention-days: 7
+      - name: Upload Playwright traces & videos
+        if: steps.e2e-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-playwright-artifacts
+          path: ${{ inputs.work-dir }}/.out/playwright-test-results/
+          retention-days: 7
+      - name: Fail job if E2E tests failed
+        if: steps.e2e-tests.outcome == 'failure'
+        run: exit 1
+
+  generate-test-report:
+    name: "Test: Allure Report"
+    runs-on: ubuntu-latest
+    needs: [unit-test, e2e-test]
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ inputs.work-dir }}
+      - name: Download Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ inputs.artifact-prefix }}-allure-results-*
+          path: ${{ inputs.work-dir }}/.out/allure-results/
+          merge-multiple: true
+      - name: Generate Allure Report
+        working-directory: ${{ inputs.work-dir }}
+        run: npm run reports
+      - name: Upload Allure Tests Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-allure-tests-report
+          path: ${{ inputs.work-dir }}/.out/allure-report/
+          retention-days: 7
+
+  audit:
+    name: "Test: Security Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ inputs.work-dir }}
+      - name: Run npm audit & summary
+        id: audit
+        continue-on-error: true
+        uses: ./.github/actions/npm-audit-summary
+        with:
+          game-name: ${{ inputs.game-name }}
+          work-dir: ${{ inputs.work-dir }}
+      - name: Generate HTML report
+        if: always()
+        working-directory: ${{ inputs.work-dir }}
+        run: npm audit --omit=dev --json | npx audit-export
+      - name: Upload Audit HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-npm-audit-report
+          path: ${{ inputs.work-dir }}/audit-report.html
+          retention-days: 7
+      - name: Fail job if audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
+
+  PR-report:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [lint, unit-test, e2e-test, audit]
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ci-${{ inputs.artifact-prefix }}
+          recreate: true
+          message: |
+            ## CI Report — ${{ inputs.game-name }}
+
+            | Job | Status |
+            |-----|--------|
+            | Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Unit Tests | ${{ needs.unit-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | E2E Tests | ${{ needs.e2e-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | npm audit | ${{ needs.audit.result == 'success' && '✅ Clean' || '⚠️ Issues' }} |
+
+            [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
