@@ -24,8 +24,26 @@ jobs:
           fi
           COMPONENT="${BASH_REMATCH[1]}"
           VERSION="${BASH_REMATCH[2]}"
+
+          case "$COMPONENT" in
+            spaceinvaders)
+              DEPLOY_WORKFLOW="deploy-space-invaders.yml"
+              STATIC_ARTIFACT="si-site"
+              ;;
+            twospaceships)
+              DEPLOY_WORKFLOW="deploy-two-spaceships.yml"
+              STATIC_ARTIFACT="ts-site"
+              ;;
+            *)
+              echo "::error::Unsupported component '$COMPONENT'"
+              exit 1
+              ;;
+          esac
+
           echo "component=${COMPONENT}" >> "$GITHUB_OUTPUT"
           echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "deploy_workflow=${DEPLOY_WORKFLOW}" >> "$GITHUB_OUTPUT"
+          echo "static_artifact=${STATIC_ARTIFACT}" >> "$GITHUB_OUTPUT"
 
       - uses: imjasonh/setup-crane@v0.4
 
@@ -64,11 +82,32 @@ jobs:
         run: |
           crane copy "${SRC}@${DIGEST}" "${DST}:${VERSION}"
 
+      - name: Download static build artifact
+        uses: dawidd6/action-download-artifact@v20
+        with:
+          github_token: ${{ github.token }}
+          workflow: ${{ steps.parse.outputs.deploy_workflow }}
+          workflow_conclusion: success
+          branch: main
+          name: ${{ steps.parse.outputs.static_artifact }}
+          path: release-assets/site
+
+      - name: Package release static build
+        id: static-package
+        env:
+          COMPONENT: ${{ steps.parse.outputs.component }}
+          VERSION: ${{ steps.parse.outputs.version }}
+        run: |
+          ARCHIVE_NAME="${COMPONENT}-${VERSION}-static-site.zip"
+          (cd release-assets && zip -r "${ARCHIVE_NAME}" site)
+          echo "archive=release-assets/${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Attach release note about image tags
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.release.tag_name }}
           append_body: true
+          files: ${{ steps.static-package.outputs.archive }}
           body: |
 
             ---
