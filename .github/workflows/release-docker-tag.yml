@@ -1,8 +1,18 @@
 name: "[Central] Tag Docker Image on Release"
 
 on:
+  push:
+    tags:
+      - 'spaceinvaders-v*'
+      - 'twospaceships-v*'
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to process (e.g. spaceinvaders-v1.2.0)
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -21,7 +31,7 @@ jobs:
       - name: Parse release tag
         id: parse
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
         run: |
           # Expected format: <component>-v<semver>
           # Examples: spaceinvaders-v1.2.0, twospaceships-v2.0.1
