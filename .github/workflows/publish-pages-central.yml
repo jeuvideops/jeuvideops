@@ -23,45 +23,9 @@ permissions:
   id-token: write
 
 jobs:
-  build-sites:
-    name: "Build: Games from Source"
-    runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup-node-project
-        with:
-          working-directory: SpaceInvaders
-      - name: Build SpaceInvaders
-        working-directory: SpaceInvaders
-        run: npm run build
-
-      - uses: ./.github/actions/setup-node-project
-        with:
-          working-directory: TwoSpaceships
-      - name: Build TwoSpaceships
-        working-directory: TwoSpaceships
-        run: npx gulp build
-
-      - name: Upload SI site
-        uses: actions/upload-artifact@v4
-        with:
-          name: central-si-site
-          path: SpaceInvaders/build/
-          retention-days: 1
-
-      - name: Upload TS site
-        uses: actions/upload-artifact@v4
-        with:
-          name: central-ts-site
-          path: TwoSpaceships/dist/min/
-          retention-days: 1
-
   deploy-pages:
     name: "Deploy: GitHub Pages"
     runs-on: ubuntu-latest
-    needs: [build-sites]
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
@@ -69,17 +33,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Download SI site
-        uses: actions/download-artifact@v4
+      - name: Download SI static site
+        uses: dawidd6/action-download-artifact@v20
         with:
-          name: central-si-site
+          github_token: ${{ github.token }}
+          workflow: deploy-space-invaders.yml
+          workflow_conclusion: success
+          branch: main
+          name: si-site
           path: site/SpaceInvaders
+          if_no_artifact_found: warn
 
-      - name: Download TS site
-        uses: actions/download-artifact@v4
+      - name: Download TS static site
+        uses: dawidd6/action-download-artifact@v20
         with:
-          name: central-ts-site
+          github_token: ${{ github.token }}
+          workflow: deploy-two-spaceships.yml
+          workflow_conclusion: success
+          branch: main
+          name: ts-site
           path: site/TwoSpaceships
+          if_no_artifact_found: warn
 
       - name: Download SI Allure report (latest successful deploy)
         uses: dawidd6/action-download-artifact@v20
