@@ -75,6 +75,13 @@ jobs:
           echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           echo "source_tag=sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Install crane
         uses: imjasonh/setup-crane@v0.4
 
@@ -138,6 +145,7 @@ jobs:
       - name: Attach notes + static asset to release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ steps.app-token.outputs.token }}
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           append_body: true
           files: ${{ steps.static-package.outputs.archive }}
