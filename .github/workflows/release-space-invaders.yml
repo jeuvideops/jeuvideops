@@ -66,6 +66,12 @@ jobs:
           initial_version: 1.0.0
           default_bump: patch
 
+      - name: Read docker info
+        run: |
+          echo "DOCKER_INFO<<EOF" >> $GITHUB_ENV
+          cat /tmp/docker/docker-meta.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -80,7 +86,7 @@ jobs:
 
             ### Docker Images
             ```
-            ${{ steps.tag.outputs.changelog && '' }}
+            ${{ env.DOCKER_INFO }}
             ```
 
             ### Assets

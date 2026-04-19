@@ -199,7 +199,7 @@ jobs:
       - uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: ci-${{ inputs.artifact-prefix }}
-          number: ${{ fromJSON(inputs.pull-request-number) }}
+          number: ${{ inputs.pull-request-number }}
           recreate: true
           message: |
             ## CI Report — ${{ inputs.game-name }}
