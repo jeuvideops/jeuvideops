@@ -1,4 +1,4 @@
-# Git Commit Instructions
+# Git Commit Instructions 
 
 ## Objective
 Write commit messages following the Conventional Commits specification and SemVer rules.
