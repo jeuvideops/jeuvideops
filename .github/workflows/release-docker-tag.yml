@@ -5,12 +5,14 @@ on:
     tags:
       - 'spaceinvaders-v*'
       - 'twospaceships-v*'
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
         description: Tag to process (e.g. spaceinvaders-v1.2.0)
+        required: false
+        type: string
+      commit_sha:
+        description: Commit SHA used to resolve source image/artifacts (defaults to github.sha)
         required: false
         type: string
 
@@ -20,7 +22,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: release-docker-tag-${{ github.event.release.tag_name }}
+  group: release-docker-tag-${{ github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -31,7 +33,7 @@ jobs:
       - name: Parse release tag
         id: parse
         env:
-          TAG: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           # Expected format: <component>-v<semver>
           # Examples: spaceinvaders-v1.2.0, twospaceships-v2.0.1
@@ -63,6 +65,16 @@ jobs:
           echo "deploy_workflow=${DEPLOY_WORKFLOW}" >> "$GITHUB_OUTPUT"
           echo "static_artifact=${STATIC_ARTIFACT}" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve source commit
+        id: source
+        env:
+          INPUT_COMMIT: ${{ github.event.inputs.commit_sha }}
+        run: |
+          COMMIT_SHA="${INPUT_COMMIT:-${GITHUB_SHA}}"
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "source_tag=sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
       - name: Install crane
         uses: imjasonh/setup-crane@v0.4
 
@@ -76,12 +88,13 @@ jobs:
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | crane auth login docker.io \
             -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Resolve digest from GHCR latest
+      - name: Resolve digest from immutable SHA tag
         id: digest
         env:
           IMAGE: ghcr.io/${{ github.repository_owner }}/${{ steps.parse.outputs.component }}
+          SOURCE_TAG: ${{ steps.source.outputs.source_tag }}
         run: |
-          DIGEST="$(crane digest "${IMAGE}:latest")"
+          DIGEST="$(crane digest "${IMAGE}:${SOURCE_TAG}")"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Tag GHCR image with release semver
@@ -107,7 +120,7 @@ jobs:
           github_token: ${{ github.token }}
           workflow: ${{ steps.parse.outputs.deploy_workflow }}
           workflow_conclusion: success
-          branch: main
+          commit: ${{ steps.source.outputs.commit_sha }}
           name: ${{ steps.parse.outputs.static_artifact }}
           path: release-assets/site
           if_no_artifact_found: fail
@@ -125,7 +138,7 @@ jobs:
       - name: Attach notes + static asset to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           append_body: true
           files: ${{ steps.static-package.outputs.archive }}
           body: |
