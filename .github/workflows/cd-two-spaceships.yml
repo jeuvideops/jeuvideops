@@ -2,7 +2,7 @@ name: "[TS] CD"
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'TwoSpaceships/**'
       - '!TwoSpaceships/.out/**'
@@ -10,6 +10,9 @@ on:
 concurrency:
   group: cd-twospaceships
   cancel-in-progress: false
+
+permissions:
+  packages: write
 
 jobs:
   cd:
