@@ -1,6 +1,7 @@
 name: "PR Gate"
 
 on:
+  workflow_run: 
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
