@@ -2,17 +2,7 @@ name: "[SI] CI"
 
 on:
   workflow_call:
-    inputs:
-      is-pull-request:
-        description: Whether triggered from a PR context (enables PR comments)
-        required: false
-        type: boolean
-        default: false
-      pull-request-number:
-        description: PR number for comments
-        required: false
-        type: string
-        default: ''
+  workflow_dispatch:
   push:
     branches-ignore: [main]
     paths:
@@ -37,6 +27,4 @@ jobs:
       game-name: SpaceInvaders
       work-dir: SpaceInvaders
       artifact-prefix: spaceinvaders
-      is-pull-request: ${{ inputs.is-pull-request || false }}
-      pull-request-number: ${{ inputs.pull-request-number || '' }}
     secrets: inherit
