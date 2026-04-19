@@ -11,9 +11,6 @@ concurrency:
   group: cd-twospaceships
   cancel-in-progress: false
 
-permissions:
-  packages: write
-
 jobs:
   cd:
     name: "CD Suite"
