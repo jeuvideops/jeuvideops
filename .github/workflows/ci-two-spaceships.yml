@@ -2,7 +2,17 @@ name: "[TS] CI"
 
 on:
   workflow_call:
-  workflow_dispatch:
+    inputs:
+      is-pull-request:
+        description: Whether triggered from a PR context (enables PR comments)
+        required: false
+        type: boolean
+        default: false
+      pull-request-number:
+        description: PR number for comments
+        required: false
+        type: string
+        default: ''
   push:
     branches-ignore: [main]
     paths:
@@ -27,4 +37,6 @@ jobs:
       game-name: TwoSpaceships
       work-dir: TwoSpaceships
       artifact-prefix: twospaceships
+      is-pull-request: ${{ inputs.is-pull-request || false }}
+      pull-request-number: ${{ inputs.pull-request-number || '' }}
     secrets: inherit

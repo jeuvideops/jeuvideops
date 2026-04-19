@@ -1,0 +1,95 @@
+name: "[SI] Release"
+
+on:
+  workflow_run:
+    workflows: ["[SI] CD"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    name: "Create Release"
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.RELEASE_APP_ID }}
+          private_key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Download site artifact from CD run
+        uses: actions/download-artifact@v4
+        with:
+          name: spaceinvaders-site
+          path: /tmp/site
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download docker metadata from CD run
+        uses: actions/download-artifact@v4
+        with:
+          name: spaceinvaders-docker-meta
+          path: /tmp/docker
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package dist
+        run: |
+          cd /tmp/site
+          zip -r /tmp/spaceinvaders-dist.zip .
+
+      - name: Package source
+        run: |
+          cd SpaceInvaders
+          zip -r /tmp/spaceinvaders-src.zip . \
+            -x "node_modules/*" \
+            -x ".out/*" \
+            -x "build/*" \
+            -x "*.zip"
+
+      - name: Bump version and push tag
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          tag_prefix: spaceinvaders-v
+          initial_version: 1.0.0
+          default_bump: patch
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          name: "SpaceInvaders ${{ steps.tag.outputs.new_version }}"
+          body: |
+            ## SpaceInvaders ${{ steps.tag.outputs.new_version }}
+
+            ### What changed
+            ${{ steps.tag.outputs.changelog }}
+
+            ### Docker Images
+            ```
+            ${{ steps.tag.outputs.changelog && '' }}
+            ```
+
+            ### Assets
+            | File | Description |
+            |------|-------------|
+            | `spaceinvaders-dist.zip` | Built game — static files served by the Docker image |
+            | `spaceinvaders-src.zip` | Game source code (no node_modules) |
+            | `docker-meta.txt` | Docker image URIs and digest |
+          files: |
+            /tmp/spaceinvaders-dist.zip
+            /tmp/spaceinvaders-src.zip
+            /tmp/docker/docker-meta.txt
