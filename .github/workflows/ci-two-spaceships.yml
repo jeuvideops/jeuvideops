@@ -10,13 +10,6 @@ on:
       - '.github/workflows/ci-two-spaceships.yml'
       - '.github/workflows/_ci-game.yml'
       - '.github/actions/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'TwoSpaceships/**'
-      - '.github/workflows/ci-two-spaceships.yml'
-      - '.github/workflows/_ci-game.yml'
-      - '.github/actions/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
