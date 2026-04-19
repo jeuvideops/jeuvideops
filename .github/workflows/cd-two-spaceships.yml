@@ -1,0 +1,30 @@
+name: "[TS] CD"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'TwoSpaceships/**'
+      - '!TwoSpaceships/.out/**'
+
+concurrency:
+  group: cd-twospaceships
+  cancel-in-progress: false
+  
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cd:
+    name: "CD Suite"
+    uses: ./.github/workflows/_cd-game.yml
+    with:
+      game-name: TwoSpaceships
+      work-dir: TwoSpaceships
+      artifact-prefix: twospaceships
+      build-cmd: npx gulp build
+      build-output-dir: TwoSpaceships/dist/min
+      docker-image-name: twospaceships
+    secrets: inherit

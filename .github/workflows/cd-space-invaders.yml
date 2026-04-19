@@ -1,0 +1,30 @@
+name: "[SI] CD"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'SpaceInvaders/**'
+      - '!SpaceInvaders/.out/**'
+
+concurrency:
+  group: cd-spaceinvaders
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cd:
+    name: "CD Suite"
+    uses: ./.github/workflows/_cd-game.yml
+    with:
+      game-name: SpaceInvaders
+      work-dir: SpaceInvaders
+      artifact-prefix: spaceinvaders
+      build-cmd: npm run build
+      build-output-dir: SpaceInvaders/build
+      docker-image-name: spaceinvaders
+    secrets: inherit

@@ -1,0 +1,108 @@
+name: _CD (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      game-name:
+        description: Display name of the game (e.g. "SpaceInvaders")
+        required: true
+        type: string
+      work-dir:
+        description: Project directory (e.g. "SpaceInvaders")
+        required: true
+        type: string
+      artifact-prefix:
+        description: Prefix for uploaded artifact names (e.g. "spaceinvaders")
+        required: true
+        type: string
+      build-cmd:
+        description: Build command (e.g. "npm run build")
+        required: true
+        type: string
+      build-output-dir:
+        description: Path to built static files (e.g. "SpaceInvaders/build")
+        required: true
+        type: string
+      docker-image-name:
+        description: Docker image name in lowercase (e.g. "spaceinvaders")
+        required: true
+        type: string
+    outputs:
+      image-digest:
+        description: Docker image digest
+        value: ${{ jobs.docker.outputs.digest }}
+      image-uri:
+        description: GHCR image URI tagged with commit SHA
+        value: ${{ jobs.docker.outputs.uri }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-static:
+    name: "Build: Static Site"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-project
+        with:
+          working-directory: ${{ inputs.work-dir }}
+      - name: Build
+        working-directory: ${{ inputs.work-dir }}
+        run: ${{ inputs.build-cmd }}
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-site
+          path: ${{ inputs.build-output-dir }}
+          retention-days: 90
+
+  docker:
+    name: "Build: Docker Image"
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      uri: ghcr.io/${{ github.repository_owner }}/${{ inputs.docker-image-name }}:sha-${{ github.sha }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push to GHCR + DockerHub
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.work-dir }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ inputs.docker-image-name }}:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ inputs.docker-image-name }}:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ inputs.docker-image-name }}:sha-${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ inputs.docker-image-name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Save docker metadata
+        run: |
+          cat > /tmp/docker-meta.txt << 'ENDOFFILE'
+          GHCR:      ghcr.io/${{ github.repository_owner }}/${{ inputs.docker-image-name }}:sha-${{ github.sha }}
+          DockerHub: ${{ vars.DOCKERHUB_USERNAME }}/${{ inputs.docker-image-name }}:sha-${{ github.sha }}
+          Digest:    ${{ steps.build.outputs.digest }}
+          Commit:    ${{ github.sha }}
+          ENDOFFILE
+      - name: Upload docker metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-docker-meta
+          path: /tmp/docker-meta.txt
+          retention-days: 90
