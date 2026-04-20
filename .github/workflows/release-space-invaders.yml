@@ -1,6 +1,7 @@
 name: "[SI] Release"
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["[SI] CD"]
     types: [completed]

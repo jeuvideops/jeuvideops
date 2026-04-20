@@ -1,6 +1,7 @@
 name: "[Central] Sync Satellites"
 
 on:
+  workflow_dispatch:
   push:
   delete:
 

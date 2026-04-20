@@ -1,6 +1,7 @@
 name: _CI (reusable)
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       game-name:

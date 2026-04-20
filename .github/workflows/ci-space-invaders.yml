@@ -2,6 +2,7 @@ name: "[SI] CI"
 
 on:
   workflow_call:
+    workflow_dispatch:
     inputs:
       is-pull-request:
         description: Whether triggered from a PR context (enables PR comments)

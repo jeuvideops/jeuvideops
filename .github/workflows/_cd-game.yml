@@ -1,6 +1,7 @@
 name: _CD (reusable)
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       game-name:

@@ -1,6 +1,7 @@
 name: "[TS] CI"
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       is-pull-request:
