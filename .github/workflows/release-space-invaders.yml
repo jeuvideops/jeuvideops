@@ -2,6 +2,11 @@ name: "[SI] Release"
 
 on:
   workflow_dispatch:
+    inputs:
+      cd-run-id:
+        description: "ID of the [SI] CD run to pull artifacts from"
+        required: true
+        type: string
   workflow_run:
     workflows: ["[SI] CD"]
     types: [completed]
@@ -15,7 +20,7 @@ permissions:
 jobs:
   release:
     name: "Create Release"
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -34,7 +39,7 @@ jobs:
         with:
           name: spaceinvaders-site
           path: /tmp/site
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ inputs.cd-run-id || github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download docker metadata from CD run
@@ -42,7 +47,7 @@ jobs:
         with:
           name: spaceinvaders-docker-meta
           path: /tmp/docker
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ inputs.cd-run-id || github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package dist
