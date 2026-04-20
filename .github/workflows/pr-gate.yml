@@ -98,7 +98,7 @@ jobs:
     if: needs.detect-changes.outputs.si == 'true' && needs.check-si.outputs.needs-ci == 'true'
     uses: ./.github/workflows/ci-space-invaders.yml
     with:
-      is-pull-request: true
+      is-pull-request: ${{ github.event_name == 'pull_request' }}
       pull-request-number: ${{ github.event.pull_request.number }}
     secrets: inherit
 
@@ -108,7 +108,7 @@ jobs:
     if: needs.detect-changes.outputs.ts == 'true' && needs.check-ts.outputs.needs-ci == 'true'
     uses: ./.github/workflows/ci-two-spaceships.yml
     with:
-      is-pull-request: true
+      is-pull-request: ${{ github.event_name == 'pull_request' }}
       pull-request-number: ${{ github.event.pull_request.number }}
     secrets: inherit
 
