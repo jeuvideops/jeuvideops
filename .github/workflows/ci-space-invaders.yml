@@ -22,7 +22,7 @@ on:
       - '.github/actions/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-si-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
