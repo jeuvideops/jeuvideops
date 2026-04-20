@@ -11,6 +11,10 @@ on:
 concurrency:
   group: cd-twospaceships
   cancel-in-progress: false
+  
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   cd:
