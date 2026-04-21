@@ -7,7 +7,7 @@ describe('Math [../src/math.js]', () => {
       expect(lerp(1, 3, 20)).toBe(41);
     });
 
-    it('should interpolate bullet raycast endpoint between start and end', () => {
+    it('xshould interpolate bullet raycast endpoint between start and end', () => {
       expect(lerp(1.3, -7, 2)).toBe(-15.3);
     });
 

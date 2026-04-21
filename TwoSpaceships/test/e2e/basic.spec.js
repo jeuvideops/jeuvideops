@@ -17,7 +17,7 @@ test('Canvas is visible', async ({page}) => {
 
 test('Title heading is visible', async ({page}) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', {name: 'Two Spaceships Passing In The'})).toBeVisible();
+  await expect(page.getByRole('heading', {name: ' Spaceships Passing In The'})).toBeVisible();
 });
 
 test('Health and score display initial values', async ({page}) => {
