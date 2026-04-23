@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../jeuvideops/images/Gemini_Generated_Image_cmjuckcmjuckcmju_copy-removebg-preview.png" alt="Jeux VideOPS Logo" width="210">
+  <img src="images/Gemini_Generated_Image_cmjuckcmjuckcmju_copy-removebg-preview.png" alt="Jeux VideOPS Logo" width="210">
 
   <h1>Jeux VideOPS</h1>
 
@@ -25,7 +25,7 @@
     <a href="https://jeuvideops.github.io/jeuvideops/">Voir la plateforme GitHub Pages</a>
   </p>
 
-  <img src="../jeuvideops/images/Gemini_Generated_Image_cmjuckcmjuckcmju.png" alt="Jeux VideOPS Banner" width="100%">
+  <img src="images/Gemini_Generated_Image_cmjuckcmjuckcmju.png" alt="Jeux VideOPS Banner" width="100%">
 </div>
 
 ---
